@@ -1,0 +1,708 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CITIZEN
+  STANDPIPE_OPERATOR
+  DISPATCHER
+  FIELD_TECHNICIAN
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum OtpPurpose {
+  LOGIN
+  PHONE_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum WindowStatus {
+  SCHEDULED
+  OPENED
+  CLOSED
+  CANCELLED
+}
+
+enum FlowStatus {
+  FULL_FLOW
+  TRICKLE
+  DRY
+  UNKNOWN
+}
+
+enum ReportSource {
+  CITIZEN_APP
+  OPERATOR_APP
+  USSD
+  DISPATCHER
+  SYSTEM
+}
+
+enum QueueTrend {
+  IMPROVING
+  STABLE
+  WORSE
+}
+
+enum LeakStatus {
+  OPEN
+  TRIAGED
+  INVESTIGATING
+  RESOLVED
+  REJECTED
+}
+
+enum LeakSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum WorkOrderStatus {
+  OPEN
+  ASSIGNED
+  ACKNOWLEDGED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum SensorType {
+  PRESSURE
+  FLOW
+  COMBINED
+  SIMULATOR
+}
+
+enum SensorStatus {
+  ACTIVE
+  OFFLINE
+  MAINTENANCE
+  RETIRED
+}
+
+enum TelemetrySource {
+  SENSOR
+  MANUAL
+  CSV_IMPORT
+  SIMULATOR
+}
+
+enum NotificationChannel {
+  PUSH
+  SMS
+  USSD
+  IN_APP
+}
+
+enum NotificationStatus {
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  CANCELLED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model User {
+  id                  String                    @id @default(uuid()) @db.Uuid
+  phone               String                    @unique @db.VarChar(20)
+  displayName         String                    @map("display_name") @db.VarChar(120)
+  passwordHash        String?                   @map("password_hash") @db.VarChar(255)
+  role                UserRole                  @default(CITIZEN)
+  status              UserStatus                @default(PENDING_VERIFICATION)
+  locale              String                    @default("en") @db.VarChar(10)
+  lastLoginAt         DateTime?                 @map("last_login_at")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+  citizenProfile      CitizenProfile?
+  operatorProfile     StandpipeOperatorProfile?
+  otpChallenges       OtpChallenge[]
+  refreshSessions     RefreshSession[]
+  schedulesCreated    RotationSchedule[]        @relation("RotationScheduleCreator")
+  tapReports          TapStatusReport[]
+  queueReports        QueueWaitReport[]
+  leakReports         LeakReport[]              @relation("LeakReporter")
+  workOrdersCreated   WorkOrder[]               @relation("WorkOrderCreator")
+  workOrdersAssigned  WorkOrder[]               @relation("WorkOrderAssignee")
+  workOrderActivities WorkOrderActivity[]
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference[]
+  auditEvents         AuditEvent[]              @relation("AuditActor")
+  pressureOverrides   PressureReading[]         @relation("PressureReadingCreator")
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model CitizenProfile {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @unique @map("user_id") @db.Uuid
+  kebeleId       String?       @map("kebele_id") @db.Uuid
+  neighborhoodId String?       @map("neighborhood_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kebele         Kebele?       @relation(fields: [kebeleId], references: [id], onDelete: SetNull)
+  neighborhood   Neighborhood? @relation(fields: [neighborhoodId], references: [id], onDelete: SetNull)
+
+  @@index([kebeleId])
+  @@index([neighborhoodId])
+  @@map("citizen_profiles")
+}
+
+model StandpipeOperatorProfile {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @unique @map("user_id") @db.Uuid
+  operatorCode  String      @unique @map("operator_code") @db.VarChar(40)
+  licenseNumber String?     @map("license_number") @db.VarChar(80)
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  standpipes    Standpipe[]
+
+  @@map("standpipe_operator_profiles")
+}
+
+model OtpChallenge {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String?    @map("user_id") @db.Uuid
+  phone       String     @db.VarChar(20)
+  codeHash    String     @map("code_hash") @db.VarChar(255)
+  purpose     OtpPurpose
+  attempts    Int        @default(0)
+  maxAttempts Int        @default(5) @map("max_attempts")
+  expiresAt   DateTime   @map("expires_at")
+  consumedAt  DateTime?  @map("consumed_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone, purpose, expiresAt])
+  @@index([userId])
+  @@map("otp_challenges")
+}
+
+model RefreshSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(128)
+  userAgent String?   @map("user_agent") @db.VarChar(512)
+  ipAddress String?   @map("ip_address") @db.Inet
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("refresh_sessions")
+}
+
+model Kebele {
+  id              String                                       @id @default(uuid()) @db.Uuid
+  name            String                                       @unique @db.VarChar(120)
+  code            String                                       @unique @db.VarChar(30)
+  center          Unsupported("geometry(Point, 4326)")?
+  boundary        Unsupported("geometry(MultiPolygon, 4326)")?
+  population      Int?
+  isActive        Boolean                                      @default(true) @map("is_active")
+  createdAt       DateTime                                     @default(now()) @map("created_at")
+  updatedAt       DateTime                                     @updatedAt @map("updated_at")
+  neighborhoods   Neighborhood[]
+  citizenProfiles CitizenProfile[]
+  standpipes      Standpipe[]
+  schedules       RotationSchedule[]
+  pipelines       Pipeline[]
+  valves          Valve[]
+  leakClusters    LeakCluster[]
+
+  @@index([isActive])
+  @@map("kebeles")
+}
+
+model Neighborhood {
+  id              String                                       @id @default(uuid()) @db.Uuid
+  kebeleId        String                                       @map("kebele_id") @db.Uuid
+  name            String                                       @db.VarChar(120)
+  code            String                                       @unique @db.VarChar(40)
+  center          Unsupported("geometry(Point, 4326)")?
+  boundary        Unsupported("geometry(MultiPolygon, 4326)")?
+  isActive        Boolean                                      @default(true) @map("is_active")
+  createdAt       DateTime                                     @default(now()) @map("created_at")
+  updatedAt       DateTime                                     @updatedAt @map("updated_at")
+  kebele          Kebele                                       @relation(fields: [kebeleId], references: [id], onDelete: Restrict)
+  citizenProfiles CitizenProfile[]
+  standpipes      Standpipe[]
+  leakClusters    LeakCluster[]
+
+  @@unique([kebeleId, name])
+  @@index([kebeleId, isActive])
+  @@map("neighborhoods")
+}
+
+model Standpipe {
+  id                      String                               @id @default(uuid()) @db.Uuid
+  kebeleId                String                               @map("kebele_id") @db.Uuid
+  neighborhoodId          String?                              @map("neighborhood_id") @db.Uuid
+  operatorProfileId       String?                              @map("operator_profile_id") @db.Uuid
+  code                    String                               @unique @db.VarChar(40)
+  name                    String                               @db.VarChar(120)
+  location                Unsupported("geometry(Point, 4326)")
+  elevationMeters         Decimal?                             @map("elevation_meters") @db.Decimal(9, 2)
+  capacityLitersPerMinute Decimal?                             @map("capacity_liters_per_minute") @db.Decimal(10, 2)
+  installedAt             DateTime?                            @map("installed_at") @db.Date
+  isActive                Boolean                              @default(true) @map("is_active")
+  createdAt               DateTime                             @default(now()) @map("created_at")
+  updatedAt               DateTime                             @updatedAt @map("updated_at")
+  kebele                  Kebele                               @relation(fields: [kebeleId], references: [id], onDelete: Restrict)
+  neighborhood            Neighborhood?                        @relation(fields: [neighborhoodId], references: [id], onDelete: SetNull)
+  operatorProfile         StandpipeOperatorProfile?            @relation(fields: [operatorProfileId], references: [id], onDelete: SetNull)
+  rotationWindows         RotationWindow[]
+  tapReports              TapStatusReport[]
+  tapConsensus            TapConsensus?
+  queueReports            QueueWaitReport[]
+  sensors                 TelemetrySensor[]
+  queueSnapshots          QueueSnapshot[]
+
+  @@index([kebeleId, isActive])
+  @@index([neighborhoodId])
+  @@index([operatorProfileId])
+  @@map("standpipes")
+}
+
+model Pipeline {
+  id                  String                                    @id @default(uuid()) @db.Uuid
+  kebeleId            String                                    @map("kebele_id") @db.Uuid
+  name                String                                    @db.VarChar(120)
+  material            String?                                   @db.VarChar(60)
+  diameterMillimeters Int?                                      @map("diameter_millimeters")
+  path                Unsupported("geometry(LineString, 4326)")
+  installedAt         DateTime?                                 @map("installed_at") @db.Date
+  isActive            Boolean                                   @default(true) @map("is_active")
+  createdAt           DateTime                                  @default(now()) @map("created_at")
+  updatedAt           DateTime                                  @updatedAt @map("updated_at")
+  kebele              Kebele                                    @relation(fields: [kebeleId], references: [id], onDelete: Restrict)
+
+  @@index([kebeleId, isActive])
+  @@map("pipelines")
+}
+
+model Valve {
+  id              String                               @id @default(uuid()) @db.Uuid
+  kebeleId        String                               @map("kebele_id") @db.Uuid
+  name            String                               @db.VarChar(120)
+  code            String                               @unique @db.VarChar(40)
+  location        Unsupported("geometry(Point, 4326)")
+  isOpen          Boolean                              @default(false) @map("is_open")
+  lastChangedAt   DateTime?                            @map("last_changed_at")
+  lastChangedById String?                              @map("last_changed_by_id") @db.Uuid
+  createdAt       DateTime                             @default(now()) @map("created_at")
+  updatedAt       DateTime                             @updatedAt @map("updated_at")
+  kebele          Kebele                               @relation(fields: [kebeleId], references: [id], onDelete: Restrict)
+
+  @@index([kebeleId])
+  @@map("valves")
+}
+
+model RotationSchedule {
+  id          String           @id @default(uuid()) @db.Uuid
+  kebeleId    String           @map("kebele_id") @db.Uuid
+  name        String           @db.VarChar(160)
+  startsOn    DateTime         @map("starts_on") @db.Date
+  endsOn      DateTime         @map("ends_on") @db.Date
+  status      ScheduleStatus   @default(DRAFT)
+  notes       String?          @db.Text
+  createdById String           @map("created_by_id") @db.Uuid
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  kebele      Kebele           @relation(fields: [kebeleId], references: [id], onDelete: Restrict)
+  createdBy   User             @relation("RotationScheduleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  windows     RotationWindow[]
+
+  @@index([kebeleId, startsOn, endsOn])
+  @@index([status])
+  @@map("rotation_schedules")
+}
+
+model RotationWindow {
+  id                 String           @id @default(uuid()) @db.Uuid
+  rotationScheduleId String           @map("rotation_schedule_id") @db.Uuid
+  standpipeId        String?          @map("standpipe_id") @db.Uuid
+  startsAt           DateTime         @map("starts_at")
+  endsAt             DateTime         @map("ends_at")
+  status             WindowStatus     @default(SCHEDULED)
+  minimumPressureBar Decimal?         @map("minimum_pressure_bar") @db.Decimal(7, 3)
+  maximumPressureBar Decimal?         @map("maximum_pressure_bar") @db.Decimal(7, 3)
+  openedAt           DateTime?        @map("opened_at")
+  closedAt           DateTime?        @map("closed_at")
+  notes              String?          @db.Text
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  rotationSchedule   RotationSchedule @relation(fields: [rotationScheduleId], references: [id], onDelete: Cascade)
+  standpipe          Standpipe?       @relation(fields: [standpipeId], references: [id], onDelete: Cascade)
+
+  @@index([rotationScheduleId, startsAt])
+  @@index([standpipeId, startsAt, endsAt])
+  @@index([status, startsAt])
+  @@map("rotation_windows")
+}
+
+model TapStatusReport {
+  id                String       @id @default(uuid()) @db.Uuid
+  standpipeId       String       @map("standpipe_id") @db.Uuid
+  reportedById      String?      @map("reported_by_id") @db.Uuid
+  status            FlowStatus
+  source            ReportSource @default(CITIZEN_APP)
+  reliabilityWeight Decimal      @default(1) @map("reliability_weight") @db.Decimal(5, 3)
+  note              String?      @db.VarChar(500)
+  observedAt        DateTime     @map("observed_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  standpipe         Standpipe    @relation(fields: [standpipeId], references: [id], onDelete: Cascade)
+  reportedBy        User?        @relation(fields: [reportedById], references: [id], onDelete: SetNull)
+
+  @@index([standpipeId, observedAt(sort: Desc)])
+  @@index([reportedById])
+  @@map("tap_status_reports")
+}
+
+model TapConsensus {
+  id               String     @id @default(uuid()) @db.Uuid
+  standpipeId      String     @unique @map("standpipe_id") @db.Uuid
+  status           FlowStatus @default(UNKNOWN)
+  confidence       Decimal    @default(0) @db.Decimal(5, 4)
+  sampleCount      Int        @default(0) @map("sample_count")
+  fullFlowScore    Decimal    @default(0) @map("full_flow_score") @db.Decimal(9, 6)
+  trickleScore     Decimal    @default(0) @map("trickle_score") @db.Decimal(9, 6)
+  dryScore         Decimal    @default(0) @map("dry_score") @db.Decimal(9, 6)
+  lastCalculatedAt DateTime   @default(now()) @map("last_calculated_at")
+  lastObservedAt   DateTime?  @map("last_observed_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  standpipe        Standpipe  @relation(fields: [standpipeId], references: [id], onDelete: Cascade)
+
+  @@index([status, lastCalculatedAt])
+  @@map("tap_consensus")
+}
+
+model QueueWaitReport {
+  id                String       @id @default(uuid()) @db.Uuid
+  standpipeId       String       @map("standpipe_id") @db.Uuid
+  reportedById      String?      @map("reported_by_id") @db.Uuid
+  waitMinutes       Int          @map("wait_minutes")
+  queueSize         Int?         @map("queue_size")
+  source            ReportSource @default(CITIZEN_APP)
+  reliabilityWeight Decimal      @default(1) @map("reliability_weight") @db.Decimal(5, 3)
+  observedAt        DateTime     @map("observed_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  standpipe         Standpipe    @relation(fields: [standpipeId], references: [id], onDelete: Cascade)
+  reportedBy        User?        @relation(fields: [reportedById], references: [id], onDelete: SetNull)
+
+  @@index([standpipeId, observedAt(sort: Desc)])
+  @@index([reportedById])
+  @@map("queue_wait_reports")
+}
+
+model QueueSnapshot {
+  id               String     @id @default(uuid()) @db.Uuid
+  standpipeId      String     @map("standpipe_id") @db.Uuid
+  waitMinutes      Decimal    @map("wait_minutes") @db.Decimal(7, 2)
+  queueSize        Int?       @map("queue_size")
+  trend            QueueTrend @default(STABLE)
+  confidence       Decimal    @default(0) @db.Decimal(5, 4)
+  sampleCount      Int        @default(0) @map("sample_count")
+  lastCalculatedAt DateTime   @default(now()) @map("last_calculated_at")
+  standpipe        Standpipe  @relation(fields: [standpipeId], references: [id], onDelete: Cascade)
+
+  @@index([lastCalculatedAt])
+  @@map("queue_snapshots")
+}
+
+model LeakReport {
+  id             String                               @id @default(uuid()) @db.Uuid
+  reportedById   String?                              @map("reported_by_id") @db.Uuid
+  clusterId      String?                              @map("cluster_id") @db.Uuid
+  location       Unsupported("geometry(Point, 4326)")
+  description    String                               @db.Text
+  photoObjectKey String?                              @map("photo_object_key") @db.VarChar(512)
+  severity       LeakSeverity                         @default(MEDIUM)
+  status         LeakStatus                           @default(OPEN)
+  source         ReportSource                         @default(CITIZEN_APP)
+  confidence     Decimal                              @default(1) @db.Decimal(5, 4)
+  observedAt     DateTime                             @map("observed_at")
+  resolvedAt     DateTime?                            @map("resolved_at")
+  createdAt      DateTime                             @default(now()) @map("created_at")
+  updatedAt      DateTime                             @updatedAt @map("updated_at")
+  reportedBy     User?                                @relation("LeakReporter", fields: [reportedById], references: [id], onDelete: SetNull)
+  cluster        LeakCluster?                         @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+
+  @@index([status, severity, createdAt])
+  @@index([clusterId])
+  @@index([reportedById])
+  @@map("leak_reports")
+}
+
+model LeakCluster {
+  id              String                                @id @default(uuid()) @db.Uuid
+  kebeleId        String                                @map("kebele_id") @db.Uuid
+  neighborhoodId  String?                               @map("neighborhood_id") @db.Uuid
+  code            String                                @unique @db.VarChar(40)
+  centroid        Unsupported("geometry(Point, 4326)")?
+  radiusMeters    Decimal?                              @map("radius_meters") @db.Decimal(9, 2)
+  severity        LeakSeverity                          @default(MEDIUM)
+  status          LeakStatus                            @default(TRIAGED)
+  reportCount     Int                                   @default(0) @map("report_count")
+  confidence      Decimal                               @default(0) @db.Decimal(5, 4)
+  firstReportedAt DateTime                              @map("first_reported_at")
+  lastReportedAt  DateTime                              @map("last_reported_at")
+  createdAt       DateTime                              @default(now()) @map("created_at")
+  updatedAt       DateTime                              @updatedAt @map("updated_at")
+  kebele          Kebele                                @relation(fields: [kebeleId], references: [id], onDelete: Restrict)
+  neighborhood    Neighborhood?                         @relation(fields: [neighborhoodId], references: [id], onDelete: SetNull)
+  reports         LeakReport[]
+  workOrders      WorkOrder[]
+
+  @@index([kebeleId, status])
+  @@index([neighborhoodId])
+  @@map("leak_clusters")
+}
+
+model WorkOrder {
+  id             String              @id @default(uuid()) @db.Uuid
+  code           String              @unique @db.VarChar(40)
+  leakClusterId  String?             @map("leak_cluster_id") @db.Uuid
+  createdById    String              @map("created_by_id") @db.Uuid
+  assignedToId   String?             @map("assigned_to_id") @db.Uuid
+  title          String              @db.VarChar(180)
+  description    String              @db.Text
+  priority       WorkOrderPriority   @default(NORMAL)
+  status         WorkOrderStatus     @default(OPEN)
+  scheduledFor   DateTime?           @map("scheduled_for")
+  startedAt      DateTime?           @map("started_at")
+  completedAt    DateTime?           @map("completed_at")
+  resolutionNote String?             @map("resolution_note") @db.Text
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  leakCluster    LeakCluster?        @relation(fields: [leakClusterId], references: [id], onDelete: SetNull)
+  createdBy      User                @relation("WorkOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo     User?               @relation("WorkOrderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  activities     WorkOrderActivity[]
+
+  @@index([status, priority, createdAt])
+  @@index([assignedToId, status])
+  @@index([leakClusterId])
+  @@map("work_orders")
+}
+
+model WorkOrderActivity {
+  id          String           @id @default(uuid()) @db.Uuid
+  workOrderId String           @map("work_order_id") @db.Uuid
+  actorId     String           @map("actor_id") @db.Uuid
+  fromStatus  WorkOrderStatus? @map("from_status")
+  toStatus    WorkOrderStatus? @map("to_status")
+  note        String?          @db.Text
+  metadata    Json?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  workOrder   WorkOrder        @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  actor       User             @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([workOrderId, createdAt])
+  @@index([actorId])
+  @@map("work_order_activities")
+}
+
+model TelemetrySensor {
+  id          String                                @id @default(uuid()) @db.Uuid
+  standpipeId String?                               @map("standpipe_id") @db.Uuid
+  externalId  String?                               @unique @map("external_id") @db.VarChar(100)
+  name        String                                @db.VarChar(120)
+  type        SensorType                            @default(PRESSURE)
+  status      SensorStatus                          @default(ACTIVE)
+  location    Unsupported("geometry(Point, 4326)")?
+  metadata    Json?
+  lastSeenAt  DateTime?                             @map("last_seen_at")
+  createdAt   DateTime                              @default(now()) @map("created_at")
+  updatedAt   DateTime                              @updatedAt @map("updated_at")
+  standpipe   Standpipe?                            @relation(fields: [standpipeId], references: [id], onDelete: SetNull)
+  readings    PressureReading[]
+  aggregates  PressureAggregate[]
+
+  @@index([standpipeId, status])
+  @@map("telemetry_sensors")
+}
+
+model PressureReading {
+  id                  String                                @id @default(uuid()) @db.Uuid
+  sensorId            String?                               @map("sensor_id") @db.Uuid
+  pressureBar         Decimal                               @map("pressure_bar") @db.Decimal(7, 3)
+  flowLitersPerSecond Decimal?                              @map("flow_liters_per_second") @db.Decimal(10, 3)
+  location            Unsupported("geometry(Point, 4326)")?
+  source              TelemetrySource
+  externalId          String?                               @unique @map("external_id") @db.VarChar(120)
+  observedAt          DateTime                              @map("observed_at")
+  receivedAt          DateTime                              @default(now()) @map("received_at")
+  createdById         String?                               @map("created_by_id") @db.Uuid
+  sensor              TelemetrySensor?                      @relation(fields: [sensorId], references: [id], onDelete: SetNull)
+  createdBy           User?                                 @relation("PressureReadingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([observedAt(sort: Desc)])
+  @@index([sensorId, observedAt(sort: Desc)])
+  @@index([source, observedAt])
+  @@map("pressure_readings")
+}
+
+model PressureAggregate {
+  id                 String                                @id @default(uuid()) @db.Uuid
+  sensorId           String?                               @map("sensor_id") @db.Uuid
+  windowStart        DateTime                              @map("window_start")
+  windowEnd          DateTime                              @map("window_end")
+  averagePressureBar Decimal                               @map("average_pressure_bar") @db.Decimal(7, 3)
+  minimumPressureBar Decimal                               @map("minimum_pressure_bar") @db.Decimal(7, 3)
+  maximumPressureBar Decimal                               @map("maximum_pressure_bar") @db.Decimal(7, 3)
+  sampleCount        Int                                   @map("sample_count")
+  cell               Unsupported("geometry(Point, 4326)")?
+  createdAt          DateTime                              @default(now()) @map("created_at")
+  sensor             TelemetrySensor?                      @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@unique([sensorId, windowStart, windowEnd])
+  @@index([windowStart, windowEnd])
+  @@map("pressure_aggregates")
+}
+
+model Notification {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String?             @map("user_id") @db.Uuid
+  channel       NotificationChannel
+  template      String              @db.VarChar(80)
+  title         String              @db.VarChar(160)
+  body          String              @db.Text
+  payload       Json?
+  status        NotificationStatus  @default(QUEUED)
+  scheduledFor  DateTime?           @map("scheduled_for")
+  sentAt        DateTime?           @map("sent_at")
+  deliveredAt   DateTime?           @map("delivered_at")
+  readAt        DateTime?           @map("read_at")
+  failureReason String?             @map("failure_reason") @db.VarChar(500)
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  user          User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status, scheduledFor])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  channel   NotificationChannel
+  enabled   Boolean             @default(true)
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel])
+  @@map("notification_preferences")
+}
+
+model UssdSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  sessionKey String   @unique @map("session_key") @db.VarChar(160)
+  phone      String   @db.VarChar(20)
+  menuPath   String   @default("main") @map("menu_path") @db.VarChar(120)
+  state      Json?
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([phone, expiresAt])
+  @@map("ussd_sessions")
+}
+
+model OutboxEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  aggregateType String       @map("aggregate_type") @db.VarChar(100)
+  aggregateId   String       @map("aggregate_id") @db.VarChar(100)
+  eventType     String       @map("event_type") @db.VarChar(120)
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  availableAt   DateTime     @default(now()) @map("available_at")
+  processedAt   DateTime?    @map("processed_at")
+  lastError     String?      @map("last_error") @db.Text
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId])
+  @@map("outbox_events")
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(uuid()) @db.Uuid
+  scope        String   @db.VarChar(100)
+  key          String   @db.VarChar(160)
+  requestHash  String   @map("request_hash") @db.VarChar(128)
+  responseCode Int?     @map("response_code")
+  responseBody Json?    @map("response_body")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String   @db.VarChar(120)
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String?  @map("entity_id") @db.VarChar(100)
+  requestId  String?  @map("request_id") @db.VarChar(100)
+  userAgent  String?  @map("user_agent") @db.VarChar(512)
+  ipAddress  String?  @map("ip_address") @db.Inet
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([entityType, entityId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_events")
+}
