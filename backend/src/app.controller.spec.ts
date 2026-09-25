@@ -15,8 +15,13 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('returns API metadata', () => {
+      expect(appController.getInfo()).toEqual({
+        name: 'HydroJimma API',
+        version: '1.0.0',
+        status: 'operational',
+        documentation: '/docs',
+      });
     });
   });
 });

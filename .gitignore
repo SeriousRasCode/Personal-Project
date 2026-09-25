@@ -6,8 +6,8 @@ coverage/
 !.env.example
 *.log
 *.tsbuildinfo
+backend/src/generated/prisma/
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
-.idea/
