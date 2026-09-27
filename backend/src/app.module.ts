@@ -8,8 +8,16 @@ import { AppService } from './app.service.js';
 import configuration from './config/configuration.js';
 import { validateEnvironment } from './config/env.validation.js';
 import { PrismaModule } from './database/prisma.module.js';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
+import { RolesGuard } from './common/guards/roles.guard.js';
 import { HealthModule } from './health/health.module.js';
 import { QueueModule } from './queues/queue.module.js';
+import { AuditModule } from './modules/audit/audit.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { GeographyModule } from './modules/geography/geography.module.js';
+import { SchedulesModule } from './modules/schedules/schedules.module.js';
+import { StandpipesModule } from './modules/standpipes/standpipes.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
   imports: [
@@ -29,6 +37,12 @@ import { QueueModule } from './queues/queue.module.js';
     }),
     PrismaModule,
     QueueModule,
+    AuditModule,
+    AuthModule,
+    UsersModule,
+    GeographyModule,
+    StandpipesModule,
+    SchedulesModule,
     HealthModule,
   ],
   controllers: [AppController],
@@ -37,6 +51,14 @@ import { QueueModule } from './queues/queue.module.js';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

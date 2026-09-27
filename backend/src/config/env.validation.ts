@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   Min,
   MinLength,
@@ -83,6 +84,10 @@ class EnvironmentVariables {
   @IsOptional()
   CORS_ORIGINS = 'http://localhost:3001';
 
+  @IsBoolean()
+  @IsOptional()
+  TRUST_PROXY = false;
+
   @IsString()
   @IsNotEmpty()
   @IsOptional()
@@ -127,6 +132,10 @@ class EnvironmentVariables {
   @IsString()
   @MinLength(32)
   USSD_CALLBACK_SECRET!: string;
+
+  @IsString()
+  @Matches(/^[0-9a-fA-F]{64}$/)
+  DATA_ENCRYPTION_KEY!: string;
 }
 
 function optionalString(value: string | undefined): string | undefined {
@@ -134,11 +143,60 @@ function optionalString(value: string | undefined): string | undefined {
   return normalized ? normalized : undefined;
 }
 
+function positiveInteger(value: unknown, fallback: number): unknown {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : value;
+}
+
+function booleanValue(value: unknown, fallback: boolean): unknown {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+  }
+  return value;
+}
+
+function isTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function validateEnvironment(
   environment: Record<string, unknown>,
 ): Record<string, unknown> {
   const normalized = {
     ...environment,
+    PORT: positiveInteger(environment.PORT, 3000),
+    JWT_ACCESS_TTL_SECONDS: positiveInteger(
+      environment.JWT_ACCESS_TTL_SECONDS,
+      900,
+    ),
+    JWT_REFRESH_TTL_SECONDS: positiveInteger(
+      environment.JWT_REFRESH_TTL_SECONDS,
+      2_592_000,
+    ),
+    OTP_TTL_SECONDS: positiveInteger(environment.OTP_TTL_SECONDS, 300),
+    REDIS_PORT: positiveInteger(environment.REDIS_PORT, 6379),
+    S3_FORCE_PATH_STYLE: booleanValue(environment.S3_FORCE_PATH_STYLE, true),
+    TRUST_PROXY: booleanValue(environment.TRUST_PROXY, false),
     REDIS_PASSWORD: optionalString(
       environment.REDIS_PASSWORD as string | undefined,
     ),
@@ -160,6 +218,16 @@ export function validateEnvironment(
     throw new Error(`Environment validation failed: ${details}`);
   }
 
+  if (!isTimeZone(config.APP_TIMEZONE)) {
+    throw new Error('APP_TIMEZONE must be a valid IANA timezone');
+  }
+
+  if (config.CORS_ORIGINS.split(',').some((origin) => origin.trim() === '*')) {
+    throw new Error(
+      'CORS_ORIGINS cannot contain a wildcard when credentials are enabled',
+    );
+  }
+
   if (
     config.NODE_ENV === 'production' &&
     [config.JWT_ACCESS_SECRET, config.JWT_REFRESH_SECRET].some((secret) =>
@@ -167,6 +235,15 @@ export function validateEnvironment(
     )
   ) {
     throw new Error('Production JWT secrets must be explicitly configured');
+  }
+
+  if (
+    config.NODE_ENV === 'production' &&
+    /^0+$/.test(config.DATA_ENCRYPTION_KEY)
+  ) {
+    throw new Error(
+      'Production DATA_ENCRYPTION_KEY must be explicitly configured',
+    );
   }
 
   return { ...environment, ...config };

@@ -6,7 +6,10 @@ function toPositiveInteger(
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function toBoolean(value: string | undefined, fallback: boolean): boolean {
+export function toBoolean(
+  value: string | undefined,
+  fallback: boolean,
+): boolean {
   if (value === undefined) {
     return fallback;
   }
@@ -22,6 +25,7 @@ export default () => ({
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  trustProxy: toBoolean(process.env.TRUST_PROXY, false),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
@@ -35,6 +39,9 @@ export default () => ({
     ),
   },
   otpTtlSeconds: toPositiveInteger(process.env.OTP_TTL_SECONDS, 300),
+  encryption: {
+    key: process.env.DATA_ENCRYPTION_KEY,
+  },
   redis: {
     host: process.env.REDIS_HOST ?? 'localhost',
     port: toPositiveInteger(process.env.REDIS_PORT, 6379),
