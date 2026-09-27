@@ -48,11 +48,11 @@ export default () => ({
     password: process.env.REDIS_PASSWORD,
   },
   storage: {
-    endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+    endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:4566',
     region: process.env.S3_REGION ?? 'us-east-1',
     bucket: process.env.S3_BUCKET ?? 'hydrojimma',
-    accessKey: process.env.S3_ACCESS_KEY ?? 'minioadmin',
-    secretKey: process.env.S3_SECRET_KEY ?? 'minioadmin',
+    accessKey: process.env.S3_ACCESS_KEY ?? 'test',
+    secretKey: process.env.S3_SECRET_KEY ?? 'test',
     forcePathStyle: toBoolean(process.env.S3_FORCE_PATH_STYLE, true),
   },
   sms: {

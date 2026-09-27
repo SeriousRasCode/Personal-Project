@@ -30,8 +30,10 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "infra:up": "docker compose up -d postgres redis minio",
+    "infra:up": "docker compose up -d postgres redis localstack",
+    "infra:init": "docker compose up localstack-init",
     "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "postinstall": "prisma generate"
   },
