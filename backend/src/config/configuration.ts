@@ -6,6 +6,19 @@ function toPositiveInteger(
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function toPositiveNumber(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseFloat(value ?? '');
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function toNonNegativeNumber(
+  value: string | undefined,
+  fallback: number,
+): number {
+  const parsed = Number.parseFloat(value ?? '');
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 export function toBoolean(
   value: string | undefined,
   fallback: boolean,
@@ -39,6 +52,35 @@ export default () => ({
     ),
   },
   otpTtlSeconds: toPositiveInteger(process.env.OTP_TTL_SECONDS, 300),
+  consensus: {
+    windowHours: toPositiveInteger(process.env.CONSENSUS_WINDOW_HOURS, 24),
+    halfLifeHours: toPositiveNumber(process.env.CONSENSUS_HALF_LIFE_HOURS, 6),
+    saturationWeight: toPositiveNumber(
+      process.env.CONSENSUS_SATURATION_WEIGHT,
+      4,
+    ),
+    priorWeight: toPositiveNumber(process.env.CONSENSUS_PRIOR_WEIGHT, 0.25),
+    queue: {
+      windowHours: toPositiveInteger(process.env.QUEUE_WINDOW_HOURS, 6),
+      minSamples: toPositiveInteger(process.env.QUEUE_MIN_SAMPLES, 2),
+      saturationSamples: toPositiveInteger(
+        process.env.QUEUE_SATURATION_SAMPLES,
+        5,
+      ),
+      minRelativeDelta: toNonNegativeNumber(
+        process.env.QUEUE_MIN_RELATIVE_DELTA,
+        0.15,
+      ),
+      minAbsoluteDeltaMinutes: toNonNegativeNumber(
+        process.env.QUEUE_MIN_ABSOLUTE_DELTA_MINUTES,
+        2,
+      ),
+      snapshotMinIntervalMinutes: toPositiveInteger(
+        process.env.QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES,
+        15,
+      ),
+    },
+  },
   encryption: {
     key: process.env.DATA_ENCRYPTION_KEY,
   },

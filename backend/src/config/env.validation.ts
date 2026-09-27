@@ -4,6 +4,7 @@ import {
   IsIn,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -73,6 +74,66 @@ class EnvironmentVariables {
   @Min(60)
   @IsOptional()
   OTP_TTL_SECONDS = 300;
+
+  @IsInt()
+  @Min(1)
+  @Max(720)
+  @IsOptional()
+  CONSENSUS_WINDOW_HOURS = 24;
+
+  @IsNumber()
+  @Min(0.1)
+  @Max(720)
+  @IsOptional()
+  CONSENSUS_HALF_LIFE_HOURS = 6;
+
+  @IsNumber()
+  @Min(0.1)
+  @Max(1000)
+  @IsOptional()
+  CONSENSUS_SATURATION_WEIGHT = 4;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  @IsOptional()
+  CONSENSUS_PRIOR_WEIGHT = 0.25;
+
+  @IsInt()
+  @Min(1)
+  @Max(168)
+  @IsOptional()
+  QUEUE_WINDOW_HOURS = 6;
+
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  QUEUE_MIN_SAMPLES = 2;
+
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  @IsOptional()
+  QUEUE_SATURATION_SAMPLES = 5;
+
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  @IsOptional()
+  QUEUE_MIN_RELATIVE_DELTA = 0.15;
+
+  @IsNumber()
+  @Min(0)
+  @Max(600)
+  @IsOptional()
+  QUEUE_MIN_ABSOLUTE_DELTA_MINUTES = 2;
+
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  @IsOptional()
+  QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES = 15;
 
   @IsString()
   @IsNotEmpty()
@@ -151,6 +212,14 @@ function positiveInteger(value: unknown, fallback: number): unknown {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : value;
 }
 
+function finiteNumber(value: unknown, fallback: number): unknown {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : value;
+}
+
 function booleanValue(value: unknown, fallback: boolean): unknown {
   if (value === undefined || value === null || value === '') {
     return fallback;
@@ -194,6 +263,40 @@ export function validateEnvironment(
       2_592_000,
     ),
     OTP_TTL_SECONDS: positiveInteger(environment.OTP_TTL_SECONDS, 300),
+    CONSENSUS_WINDOW_HOURS: positiveInteger(
+      environment.CONSENSUS_WINDOW_HOURS,
+      24,
+    ),
+    CONSENSUS_HALF_LIFE_HOURS: finiteNumber(
+      environment.CONSENSUS_HALF_LIFE_HOURS,
+      6,
+    ),
+    CONSENSUS_SATURATION_WEIGHT: finiteNumber(
+      environment.CONSENSUS_SATURATION_WEIGHT,
+      4,
+    ),
+    CONSENSUS_PRIOR_WEIGHT: finiteNumber(
+      environment.CONSENSUS_PRIOR_WEIGHT,
+      0.25,
+    ),
+    QUEUE_WINDOW_HOURS: positiveInteger(environment.QUEUE_WINDOW_HOURS, 6),
+    QUEUE_MIN_SAMPLES: positiveInteger(environment.QUEUE_MIN_SAMPLES, 2),
+    QUEUE_SATURATION_SAMPLES: positiveInteger(
+      environment.QUEUE_SATURATION_SAMPLES,
+      5,
+    ),
+    QUEUE_MIN_RELATIVE_DELTA: finiteNumber(
+      environment.QUEUE_MIN_RELATIVE_DELTA,
+      0.15,
+    ),
+    QUEUE_MIN_ABSOLUTE_DELTA_MINUTES: finiteNumber(
+      environment.QUEUE_MIN_ABSOLUTE_DELTA_MINUTES,
+      2,
+    ),
+    QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES: positiveInteger(
+      environment.QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES,
+      15,
+    ),
     REDIS_PORT: positiveInteger(environment.REDIS_PORT, 6379),
     S3_FORCE_PATH_STYLE: booleanValue(environment.S3_FORCE_PATH_STYLE, true),
     TRUST_PROXY: booleanValue(environment.TRUST_PROXY, false),
