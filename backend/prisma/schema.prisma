@@ -204,17 +204,18 @@ model StandpipeOperatorProfile {
 }
 
 model OtpChallenge {
-  id          String     @id @default(uuid()) @db.Uuid
-  userId      String?    @map("user_id") @db.Uuid
-  phone       String     @db.VarChar(20)
-  codeHash    String     @map("code_hash") @db.VarChar(255)
-  purpose     OtpPurpose
-  attempts    Int        @default(0)
-  maxAttempts Int        @default(5) @map("max_attempts")
-  expiresAt   DateTime   @map("expires_at")
-  consumedAt  DateTime?  @map("consumed_at")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String     @id @default(uuid()) @db.Uuid
+  userId         String?    @map("user_id") @db.Uuid
+  phone          String     @db.VarChar(20)
+  codeHash       String     @map("code_hash") @db.VarChar(255)
+  codeCiphertext String?    @map("code_ciphertext") @db.Text
+  purpose        OtpPurpose
+  attempts       Int        @default(0)
+  maxAttempts    Int        @default(5) @map("max_attempts")
+  expiresAt      DateTime   @map("expires_at")
+  consumedAt     DateTime?  @map("consumed_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  user           User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([phone, purpose, expiresAt])
   @@index([userId])

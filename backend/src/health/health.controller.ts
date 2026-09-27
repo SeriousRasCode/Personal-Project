@@ -4,12 +4,14 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Queue } from 'bullmq';
 import { PrismaService } from '../database/prisma.service.js';
 import { QUEUES } from '../queues/queue.constants.js';
+import { Public } from '../common/decorators/public.decorator.js';
 
 interface DependencyStatus {
   status: 'up' | 'down';
   latencyMs: number;
 }
 
+@Public()
 @ApiTags('health')
 @Controller('health')
 export class HealthController {

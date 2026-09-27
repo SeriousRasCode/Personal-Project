@@ -10,12 +10,13 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
 import { AppModule } from './app.module.js';
+import { toBoolean } from './config/configuration.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      trustProxy: true,
+      trustProxy: toBoolean(process.env.TRUST_PROXY, false),
       bodyLimit: 1_048_576,
     }),
   );

@@ -104,6 +104,7 @@ CREATE TABLE "otp_challenges" (
     "user_id" UUID,
     "phone" VARCHAR(20) NOT NULL,
     "code_hash" VARCHAR(255) NOT NULL,
+    "code_ciphertext" TEXT,
     "purpose" "OtpPurpose" NOT NULL,
     "attempts" INTEGER NOT NULL DEFAULT 0,
     "max_attempts" INTEGER NOT NULL DEFAULT 5,
