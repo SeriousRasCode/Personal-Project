@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { paginated, type PageResult } from '../../common/dto/pagination.dto.js';
+import { resolveObservedAt } from '../../common/dates.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { UserRole } from '../../generated/prisma/enums.js';
@@ -23,10 +24,7 @@ import {
   TapStatusReportResponseDto,
 } from './dto/report-response.dto.js';
 
-const MINUTE_MS = 60_000;
-const DAY_MS = 86_400_000;
-const MAX_FUTURE_SKEW_MS = 5 * MINUTE_MS;
-const MAX_BACKDATE_MS = 30 * DAY_MS;
+const REPORT_RELIABILITY_FLOOR = 0.1;
 
 export const REPORT_OUTBOX_EVENT_TYPES = {
   tapStatusReported: 'tap_status.reported',
@@ -50,27 +48,7 @@ export function resolveReliabilityWeight(
   const ceiling =
     role === null ? SYSTEM_RELIABILITY_CEILING : RELIABILITY_CEILING[role];
   const safeRequested = Number.isFinite(requested) ? requested : 1;
-  return Math.min(Math.max(safeRequested, 0.1), ceiling);
-}
-
-export function resolveObservedAt(
-  requested: Date | undefined,
-  now: Date,
-): Date {
-  if (!requested) {
-    return now;
-  }
-  const observedMs = requested.getTime();
-  if (Number.isNaN(observedMs)) {
-    throw new BadRequestException('observedAt is not a valid date');
-  }
-  if (observedMs > now.getTime() + MAX_FUTURE_SKEW_MS) {
-    throw new BadRequestException('observedAt cannot be in the future');
-  }
-  if (observedMs < now.getTime() - MAX_BACKDATE_MS) {
-    throw new BadRequestException('observedAt cannot be older than 30 days');
-  }
-  return new Date(observedMs);
+  return Math.min(Math.max(safeRequested, REPORT_RELIABILITY_FLOOR), ceiling);
 }
 
 export interface TapStatusReportCreated {

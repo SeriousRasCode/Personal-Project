@@ -51,6 +51,8 @@ LocalStack state on the next `infra:up`.
 | `schedules`   | Maintenance windows and rotation schedules                          |
 | `reports`     | Citizen and operator flow and queue reports, plus the outbox       |
 | `consensus`   | Bayesian tap consensus and queue trend snapshots                   |
+| `leaks`       | Citizen leak reports, spatial clustering, and public map feed      |
+| `work-orders` | Repair dispatch, assignment, and the work order lifecycle          |
 | `health`      | Liveness and readiness probes                                       |
 
 `prisma` owns database access and `queues` owns the BullMQ wiring. Both are registered
@@ -74,6 +76,40 @@ Tunables live in `.env` and are validated at startup: `CONSENSUS_WINDOW_HOURS`,
 `QUEUE_WINDOW_HOURS`, `QUEUE_MIN_SAMPLES`, `QUEUE_SATURATION_SAMPLES`,
 `QUEUE_MIN_RELATIVE_DELTA`, `QUEUE_MIN_ABSOLUTE_DELTA_MINUTES`, and
 `QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES`.
+
+## Leaks and work orders
+
+Any authenticated user can report a suspected leak. The report point is resolved to a kebele
+and, when a boundary covers it, a neighborhood; otherwise the nearest kebele centre is used.
+A report is attached to the nearest unresolved cluster inside its radius, or it seeds a new
+one. Clustering is pure and unit tested in `leaks/leak-clustering.ts`:
+
+- the cluster severity is the highest severity reported, so a later `LOW` report never
+  downgrades a `CRITICAL` cluster
+- confidence grows by `LEAK_CLUSTER_CONFIDENCE_STEP` per corroborating report, starting from
+  `LEAK_CLUSTER_CONFIDENCE_BASE`
+- the radius widens with the observed spread and is capped at
+  `LEAK_CLUSTER_MAX_RADIUS_METERS`
+- report confidence is clamped to the lower of the reporter's role ceiling and the severity
+  ceiling, so a citizen cannot claim full confidence for a low severity report
+- a cluster moves `OPEN` to `TRIAGED` to `INVESTIGATING` to `RESOLVED`, or straight to
+  `REJECTED`. Terminal clusters are immutable and drop out of the public map, and resolving
+  one closes its reports in the same transaction
+
+Work orders dispatch the repair. They move `OPEN` to `ASSIGNED` to `ACKNOWLEDGED` to
+`IN_PROGRESS` to `COMPLETED`, with `ON_HOLD` and `CANCELLED` as side exits. Only dispatchers
+and admins create or edit them, an assignee must be an active field technician, standpipe
+operator, or dispatcher, and completion requires a resolution note. Field technicians and
+operators only see the work orders assigned to them, and every mutation is
+optimistically locked with `expectedUpdatedAt`, so a concurrent edit returns `409` instead of
+silently overwriting.
+
+Clustering tunables live in `.env` and are validated at startup: `LEAK_CLUSTER_RADIUS_METERS`,
+`LEAK_CLUSTER_MAX_RADIUS_METERS`, `LEAK_CLUSTER_CONFIDENCE_BASE`, and
+`LEAK_CLUSTER_CONFIDENCE_STEP`.
+
+Both modules write outbox events and audit entries. The outbox is the seam where
+notifications and map fan-out plug in later; nothing consumes it yet.
 
 ## Tests
 
