@@ -19,9 +19,13 @@ export function joinSql(
   parts: Prisma.Sql[],
   separator: Prisma.Sql,
 ): Prisma.Sql {
-  return parts.reduce(
+  const [first, ...rest] = parts;
+  if (first === undefined) {
+    return Prisma.sql``;
+  }
+  return rest.reduce(
     (query, part) => Prisma.sql`${query}${separator}${part}`,
-    Prisma.sql``,
+    first,
   );
 }
 
