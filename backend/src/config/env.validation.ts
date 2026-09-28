@@ -159,6 +159,40 @@ class EnvironmentVariables {
   @IsOptional()
   LEAK_CLUSTER_CONFIDENCE_STEP = 0.2;
 
+  @IsInt()
+  @Min(250)
+  @Max(300_000)
+  @IsOptional()
+  OUTBOX_POLL_INTERVAL_MS = 5_000;
+
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  @IsOptional()
+  OUTBOX_BATCH_SIZE = 50;
+
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  @IsOptional()
+  OUTBOX_MAX_ATTEMPTS = 5;
+
+  @IsInt()
+  @Min(1_000)
+  @Max(600_000)
+  @IsOptional()
+  OUTBOX_LOCK_TIMEOUT_MS = 60_000;
+
+  @IsInt()
+  @Min(100)
+  @Max(600_000)
+  @IsOptional()
+  OUTBOX_RETRY_BASE_MS = 1_000;
+
+  @IsBoolean()
+  @IsOptional()
+  OUTBOX_POLLER_ENABLED = true;
+
   @IsString()
   @IsNotEmpty()
   @IsOptional()
@@ -337,6 +371,24 @@ export function validateEnvironment(
       environment.LEAK_CLUSTER_CONFIDENCE_STEP,
       0.2,
     ),
+    OUTBOX_POLL_INTERVAL_MS: positiveInteger(
+      environment.OUTBOX_POLL_INTERVAL_MS,
+      5_000,
+    ),
+    OUTBOX_BATCH_SIZE: positiveInteger(environment.OUTBOX_BATCH_SIZE, 50),
+    OUTBOX_MAX_ATTEMPTS: positiveInteger(environment.OUTBOX_MAX_ATTEMPTS, 5),
+    OUTBOX_LOCK_TIMEOUT_MS: positiveInteger(
+      environment.OUTBOX_LOCK_TIMEOUT_MS,
+      60_000,
+    ),
+    OUTBOX_RETRY_BASE_MS: positiveInteger(
+      environment.OUTBOX_RETRY_BASE_MS,
+      1_000,
+    ),
+    OUTBOX_POLLER_ENABLED: booleanValue(
+      environment.OUTBOX_POLLER_ENABLED,
+      true,
+    ),
     REDIS_PORT: positiveInteger(environment.REDIS_PORT, 6379),
     S3_FORCE_PATH_STYLE: booleanValue(environment.S3_FORCE_PATH_STYLE, true),
     TRUST_PROXY: booleanValue(environment.TRUST_PROXY, false),
@@ -376,6 +428,12 @@ export function validateEnvironment(
   if (config.CORS_ORIGINS.split(',').some((origin) => origin.trim() === '*')) {
     throw new Error(
       'CORS_ORIGINS cannot contain a wildcard when credentials are enabled',
+    );
+  }
+
+  if (config.OUTBOX_POLL_INTERVAL_MS >= config.OUTBOX_LOCK_TIMEOUT_MS) {
+    throw new Error(
+      'OUTBOX_POLL_INTERVAL_MS must be shorter than OUTBOX_LOCK_TIMEOUT_MS',
     );
   }
 
