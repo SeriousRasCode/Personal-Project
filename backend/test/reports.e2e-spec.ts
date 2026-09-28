@@ -85,6 +85,11 @@ describe('Reports and consensus (e2e)', () => {
   }, 60_000);
 
   afterAll(async () => {
+    await prisma.outboxEvent.deleteMany({
+      where: {
+        eventType: { in: ['tap_status.reported', 'queue_wait.reported'] },
+      },
+    });
     if (standpipeId) {
       await prisma.standpipe.deleteMany({ where: { code: STATION_CODE } });
     }

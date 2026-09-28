@@ -313,6 +313,7 @@ export class LeaksService {
 
       let clusterId: string;
       let attachedToExistingCluster: boolean;
+      let clusterCode: string | null = null;
 
       if (match) {
         const merged = mergeIntoCluster(match, dto.severity, thresholds);
@@ -331,7 +332,7 @@ export class LeaksService {
       } else {
         const seeded = seedCluster(dto.severity, thresholds);
         clusterId = randomUUID();
-        const code = `LEAK-${clusterId.replace(/-/g, '').slice(0, 12).toUpperCase()}`;
+        clusterCode = `LEAK-${clusterId.replace(/-/g, '').slice(0, 12).toUpperCase()}`;
         await executor.$executeRaw(Prisma.sql`
           INSERT INTO leak_clusters (
             id, kebele_id, neighborhood_id, code, centroid, radius_meters,
@@ -342,7 +343,7 @@ export class LeaksService {
             ${clusterId},
             ${geography.kebeleId},
             ${geography.neighborhoodId},
-            ${code},
+            ${clusterCode},
             ${location},
             ${seeded.radiusMeters},
             ${seeded.severity}::"LeakSeverity",
@@ -390,6 +391,9 @@ export class LeaksService {
           payload: {
             reportId,
             clusterId,
+            clusterCode,
+            reporterId: actor?.id ?? null,
+            actorId: actor?.id ?? null,
             kebeleId: geography.kebeleId,
             severity: dto.severity,
             source: dto.source,
@@ -624,6 +628,20 @@ export class LeaksService {
 
     const resolvedAt = dto.status === LeakStatus.RESOLVED ? now : undefined;
 
+    const reporters = await queryRows<RawRow>(
+      this.prisma,
+      Prisma.sql`
+        SELECT DISTINCT r.reported_by_id AS "reporterId"
+        FROM leak_reports r
+        WHERE r.cluster_id = ${clusterId}
+          AND r.reported_by_id IS NOT NULL
+      `,
+    );
+
+    const reporterIds = reporters.map((row) =>
+      toStringValue(row['reporterId'], 'reporterId'),
+    );
+
     await this.inTransaction(async (tx) => {
       await tx.$executeRaw(Prisma.sql`
         UPDATE leak_clusters
@@ -641,6 +659,23 @@ export class LeaksService {
             AND status NOT IN (${LeakStatus.RESOLVED}::"LeakStatus", ${LeakStatus.REJECTED}::"LeakStatus")
         `);
       }
+
+      await tx.outboxEvent.create({
+        data: {
+          aggregateType: 'LeakCluster',
+          aggregateId: clusterId,
+          eventType: LEAK_OUTBOX_EVENT_TYPES.leakStatusChanged,
+          payload: {
+            clusterId,
+            from: currentStatus,
+            to: dto.status,
+            note: dto.note ?? null,
+            actorId: actor.id,
+            reporterId: reporterIds[0] ?? null,
+            reporterIds,
+          },
+        },
+      });
     });
 
     await this.audit.record(

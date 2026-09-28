@@ -102,6 +102,20 @@ export default () => ({
   encryption: {
     key: process.env.DATA_ENCRYPTION_KEY,
   },
+  outbox: {
+    pollerEnabled: toBoolean(process.env.OUTBOX_POLLER_ENABLED, true),
+    pollIntervalMs: toPositiveInteger(
+      process.env.OUTBOX_POLL_INTERVAL_MS,
+      5_000,
+    ),
+    batchSize: toPositiveInteger(process.env.OUTBOX_BATCH_SIZE, 50),
+    maxAttempts: toPositiveInteger(process.env.OUTBOX_MAX_ATTEMPTS, 5),
+    lockTimeoutMs: toPositiveInteger(
+      process.env.OUTBOX_LOCK_TIMEOUT_MS,
+      60_000,
+    ),
+    retryBaseMs: toPositiveInteger(process.env.OUTBOX_RETRY_BASE_MS, 1_000),
+  },
   redis: {
     host: process.env.REDIS_HOST ?? 'localhost',
     port: toPositiveInteger(process.env.REDIS_PORT, 6379),

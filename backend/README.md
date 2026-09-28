@@ -49,10 +49,12 @@ LocalStack state on the next `infra:up`.
 | `geography`   | Regions, kebeles, neighborhoods, and boundaries with PostGIS        |
 | `standpipes`  | Standpipe registry, assignments, and operators                      |
 | `schedules`   | Maintenance windows and rotation schedules                          |
-| `reports`     | Citizen and operator flow and queue reports, plus the outbox       |
+| `reports`     | Citizen and operator flow and queue reports                        |
 | `consensus`   | Bayesian tap consensus and queue trend snapshots                   |
 | `leaks`       | Citizen leak reports, spatial clustering, and public map feed      |
 | `work-orders` | Repair dispatch, assignment, and the work order lifecycle          |
+| `outbox`      | Transactional event dispatcher with retry, backoff, and lock recovery |
+| `notifications` | In-app inbox, per-channel preferences, and idempotent delivery   |
 | `health`      | Liveness and readiness probes                                       |
 
 `prisma` owns database access and `queues` owns the BullMQ wiring. Both are registered
@@ -108,8 +110,48 @@ Clustering tunables live in `.env` and are validated at startup: `LEAK_CLUSTER_R
 `LEAK_CLUSTER_MAX_RADIUS_METERS`, `LEAK_CLUSTER_CONFIDENCE_BASE`, and
 `LEAK_CLUSTER_CONFIDENCE_STEP`.
 
-Both modules write outbox events and audit entries. The outbox is the seam where
-notifications and map fan-out plug in later; nothing consumes it yet.
+Both modules write outbox events and audit entries.
+
+## Outbox and notifications
+
+Domain services append to `outbox_events` inside the same transaction as the write, so a
+committed change always has its event. A poller then claims due rows with
+`SELECT ... FOR UPDATE SKIP LOCKED`, marks them `PROCESSING`, and increments `attempts`:
+
+- Success marks the row `PROCESSED` and stamps `processed_at`.
+- Failure schedules a retry with exponential backoff (capped at 15 minutes) and records the
+  error in `last_error`.
+- After `OUTBOX_MAX_ATTEMPTS` the row becomes `FAILED` and is left for inspection.
+- A row left in `PROCESSING` longer than `OUTBOX_LOCK_TIMEOUT_MS` is released back to
+  `PENDING`, so a crashed process cannot strand work.
+- An event type the notifier does not recognise is a no-op that still counts as processed.
+
+The poller is a database-backed loop rather than a queue consumer, so it needs no extra
+infrastructure and survives a Redis outage. Tunables live in `.env` and are validated at
+startup: `OUTBOX_POLL_INTERVAL_MS`, `OUTBOX_BATCH_SIZE`, `OUTBOX_MAX_ATTEMPTS`,
+`OUTBOX_LOCK_TIMEOUT_MS`, `OUTBOX_RETRY_BASE_MS`, and `OUTBOX_POLLER_ENABLED`. Setting
+`OUTBOX_POLLER_ENABLED=false` disables the timer, which is what the e2e suite does so it can
+drive dispatch deterministically.
+
+Recognised events and their audiences:
+
+| Event                 | Recipients                            | Excluded     |
+| --------------------- | ------------------------------------- | ------------ |
+| `leak.reported`       | active dispatchers and admins         | the actor    |
+| `leak.status_changed` | everyone who reported to the cluster  | none         |
+| `work_order.created`  | creator and assignee                  | the actor    |
+| `work_order.status_changed` | creator and assignee             | the actor    |
+
+`GET /api/v1/notifications` returns the caller's inbox with optional `status` and
+`unreadOnly` filters, `GET /api/v1/notifications/unread-count` returns a badge count, and
+`PATCH /api/v1/notifications/:id/read` marks one as read. A notification belonging to
+another user answers `404`, never `403`. `GET` and `PATCH /api/v1/notifications/preferences`
+manage per-channel opt-in; only `IN_APP` is delivered today and other channels answer `400`
+until a provider is configured.
+
+Delivery is exactly once per event and recipient: an `idempotency_records` row keyed on
+`event:user:channel` is claimed before the notification is written, so replaying an event
+cannot duplicate an inbox entry.
 
 ## Tests
 
