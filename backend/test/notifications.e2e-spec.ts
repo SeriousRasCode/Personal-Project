@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/bootstrap.js';
 import { PrismaService } from '../src/database/prisma.service.js';
+import { Prisma } from '../src/generated/prisma/client.js';
 import { OutboxStatus } from '../src/generated/prisma/enums.js';
 import type { AuthResponseDto } from '../src/modules/auth/dto/auth-response.dto.js';
 import type { LeakReportCreatedResponseDto } from '../src/modules/leaks/dto/leak-response.dto.js';
@@ -191,6 +192,11 @@ describe('Outbox dispatcher and notifications (e2e)', () => {
   }, 120_000);
 
   afterAll(async () => {
+    await prisma
+      .$executeRaw(
+        Prisma.sql`DROP TRIGGER IF EXISTS t_fail_notification_insert ON notifications`,
+      )
+      .catch(() => undefined);
     await prisma.outboxEvent.deleteMany({ where: { aggregateId: clusterId } });
     await prisma.leakReport.deleteMany({ where: { id: reportId } });
     await prisma.leakCluster.deleteMany({ where: { id: clusterId } });
@@ -333,6 +339,74 @@ describe('Outbox dispatcher and notifications (e2e)', () => {
 
     spy.mockRestore();
     await prisma.outboxEvent.deleteMany({ where: { id: poison.id } });
+  });
+
+  it('delivers exactly once after a partial write failure', async () => {
+    await drainOutbox();
+    const partialClusterId = '00000000-0000-0000-0000-00000000ab01';
+    const event = await prisma.outboxEvent.create({
+      data: {
+        aggregateType: 'LeakCluster',
+        aggregateId: partialClusterId,
+        eventType: 'leak.reported',
+        payload: { severity: 'MEDIUM', clusterId: partialClusterId },
+      },
+    });
+    const key = `${event.id}:${adminId}:IN_APP`;
+
+    await prisma.$executeRaw(Prisma.sql`
+      CREATE OR REPLACE FUNCTION fail_notification_insert() RETURNS trigger AS
+      'BEGIN RAISE EXCEPTION ''forced notification failure''; END;'
+      LANGUAGE plpgsql
+    `);
+    await prisma.$executeRaw(Prisma.sql`
+      CREATE TRIGGER t_fail_notification_insert
+      BEFORE INSERT ON notifications
+      FOR EACH ROW EXECUTE FUNCTION fail_notification_insert()
+    `);
+
+    try {
+      await prisma.outboxEvent.update({
+        where: { id: event.id },
+        data: { availableAt: new Date(0) },
+      });
+      const failed = await dispatchOnce();
+
+      expect(failed.retried).toBe(1);
+      const stuck = await prisma.outboxEvent.findUniqueOrThrow({
+        where: { id: event.id },
+      });
+      expect(stuck.status).toBe(OutboxStatus.PENDING);
+      expect(stuck.lastError).toContain('forced notification failure');
+      expect(await prisma.idempotencyRecord.count({ where: { key } })).toBe(0);
+      expect(await notificationsFor(partialClusterId)).toHaveLength(0);
+    } finally {
+      await prisma.$executeRaw(
+        Prisma.sql`DROP TRIGGER IF EXISTS t_fail_notification_insert ON notifications`,
+      );
+      await prisma.$executeRaw(
+        Prisma.sql`DROP FUNCTION IF EXISTS fail_notification_insert()`,
+      );
+    }
+
+    await prisma.outboxEvent.update({
+      where: { id: event.id },
+      data: { availableAt: new Date(0) },
+    });
+    const recovered = await dispatchOnce();
+
+    expect(recovered.processed).toBe(1);
+    expect(await notificationsFor(partialClusterId)).toHaveLength(1);
+    expect(await prisma.idempotencyRecord.count({ where: { key } })).toBe(1);
+
+    await prisma.notification.deleteMany({
+      where: {
+        userId: adminId,
+        payload: { path: ['clusterId'], equals: partialClusterId },
+      },
+    });
+    await prisma.idempotencyRecord.deleteMany({ where: { key } });
+    await prisma.outboxEvent.deleteMany({ where: { id: event.id } });
   });
 
   it('releases a stale processing lock', async () => {

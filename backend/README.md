@@ -149,9 +149,10 @@ another user answers `404`, never `403`. `GET` and `PATCH /api/v1/notifications/
 manage per-channel opt-in; only `IN_APP` is delivered today and other channels answer `400`
 until a provider is configured.
 
-Delivery is exactly once per event and recipient: an `idempotency_records` row keyed on
-`event:user:channel` is claimed before the notification is written, so replaying an event
-cannot duplicate an inbox entry.
+Delivery is exactly once per event and recipient. The idempotency record and the notification
+are written in one transaction keyed on `event:user:channel`, so a failure part-way through
+releases the claim instead of consuming it, and replaying an event cannot duplicate an inbox
+entry.
 
 ## Tests
 
