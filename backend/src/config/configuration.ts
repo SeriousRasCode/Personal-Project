@@ -81,6 +81,24 @@ export default () => ({
       ),
     },
   },
+  leaks: {
+    clusterRadiusMeters: toPositiveInteger(
+      process.env.LEAK_CLUSTER_RADIUS_METERS,
+      150,
+    ),
+    clusterMaxRadiusMeters: toPositiveInteger(
+      process.env.LEAK_CLUSTER_MAX_RADIUS_METERS,
+      400,
+    ),
+    clusterConfidenceBase: toPositiveNumber(
+      process.env.LEAK_CLUSTER_CONFIDENCE_BASE,
+      0.4,
+    ),
+    clusterConfidenceStep: toPositiveNumber(
+      process.env.LEAK_CLUSTER_CONFIDENCE_STEP,
+      0.2,
+    ),
+  },
   encryption: {
     key: process.env.DATA_ENCRYPTION_KEY,
   },

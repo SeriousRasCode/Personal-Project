@@ -16,10 +16,12 @@ import { AuditModule } from './modules/audit/audit.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { ConsensusModule } from './modules/consensus/consensus.module.js';
 import { GeographyModule } from './modules/geography/geography.module.js';
+import { LeaksModule } from './modules/leaks/leaks.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { SchedulesModule } from './modules/schedules/schedules.module.js';
 import { StandpipesModule } from './modules/standpipes/standpipes.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { WorkOrdersModule } from './modules/work-orders/work-orders.module.js';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { UsersModule } from './modules/users/users.module.js';
     SchedulesModule,
     ReportsModule,
     ConsensusModule,
+    LeaksModule,
+    WorkOrdersModule,
     HealthModule,
   ],
   controllers: [AppController],

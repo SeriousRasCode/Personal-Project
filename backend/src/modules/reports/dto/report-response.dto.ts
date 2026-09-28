@@ -1,23 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PageMetaDto } from '../../../common/dto/pagination.dto.js';
 import {
   FlowStatus,
   QueueTrend,
   ReportSource,
 } from '../../../generated/prisma/enums.js';
 
-export class PageMetaDto {
-  @ApiProperty()
-  page: number;
-
-  @ApiProperty()
-  limit: number;
-
-  @ApiProperty()
-  total: number;
-
-  @ApiProperty()
-  totalPages: number;
-}
+export { PageMetaDto };
 
 export class TapStatusReportResponseDto {
   @ApiProperty({ format: 'uuid' })

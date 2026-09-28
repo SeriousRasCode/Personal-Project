@@ -130,10 +130,34 @@ class EnvironmentVariables {
   QUEUE_MIN_ABSOLUTE_DELTA_MINUTES = 2;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   @Max(1440)
   @IsOptional()
   QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES = 15;
+
+  @IsInt()
+  @Min(10)
+  @Max(5000)
+  @IsOptional()
+  LEAK_CLUSTER_RADIUS_METERS = 150;
+
+  @IsInt()
+  @Min(10)
+  @Max(20000)
+  @IsOptional()
+  LEAK_CLUSTER_MAX_RADIUS_METERS = 400;
+
+  @IsNumber()
+  @Min(0.01)
+  @Max(1)
+  @IsOptional()
+  LEAK_CLUSTER_CONFIDENCE_BASE = 0.4;
+
+  @IsNumber()
+  @Min(0.01)
+  @Max(1)
+  @IsOptional()
+  LEAK_CLUSTER_CONFIDENCE_STEP = 0.2;
 
   @IsString()
   @IsNotEmpty()
@@ -297,6 +321,22 @@ export function validateEnvironment(
       environment.QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES,
       15,
     ),
+    LEAK_CLUSTER_RADIUS_METERS: positiveInteger(
+      environment.LEAK_CLUSTER_RADIUS_METERS,
+      150,
+    ),
+    LEAK_CLUSTER_MAX_RADIUS_METERS: positiveInteger(
+      environment.LEAK_CLUSTER_MAX_RADIUS_METERS,
+      400,
+    ),
+    LEAK_CLUSTER_CONFIDENCE_BASE: finiteNumber(
+      environment.LEAK_CLUSTER_CONFIDENCE_BASE,
+      0.4,
+    ),
+    LEAK_CLUSTER_CONFIDENCE_STEP: finiteNumber(
+      environment.LEAK_CLUSTER_CONFIDENCE_STEP,
+      0.2,
+    ),
     REDIS_PORT: positiveInteger(environment.REDIS_PORT, 6379),
     S3_FORCE_PATH_STYLE: booleanValue(environment.S3_FORCE_PATH_STYLE, true),
     TRUST_PROXY: booleanValue(environment.TRUST_PROXY, false),
@@ -323,6 +363,14 @@ export function validateEnvironment(
 
   if (!isTimeZone(config.APP_TIMEZONE)) {
     throw new Error('APP_TIMEZONE must be a valid IANA timezone');
+  }
+
+  if (
+    config.LEAK_CLUSTER_MAX_RADIUS_METERS < config.LEAK_CLUSTER_RADIUS_METERS
+  ) {
+    throw new Error(
+      'LEAK_CLUSTER_MAX_RADIUS_METERS must be at least LEAK_CLUSTER_RADIUS_METERS',
+    );
   }
 
   if (config.CORS_ORIGINS.split(',').some((origin) => origin.trim() === '*')) {
