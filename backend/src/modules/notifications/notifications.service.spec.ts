@@ -16,6 +16,7 @@ interface StubOptions {
   users?: { id: string; role: UserRole }[];
   preferences?: { userId: string; enabled: boolean }[];
   createThrows?: Error;
+  notificationThrows?: Error;
 }
 
 function createService(options: StubOptions = {}) {
@@ -24,6 +25,35 @@ function createService(options: StubOptions = {}) {
   ];
   const notifications: { userId: string; template: string }[] = [];
   const claims: string[] = [];
+
+  const tx = {
+    idempotencyRecord: {
+      create: vi.fn((args: { data: { key: string } }) => {
+        if (options.createThrows !== undefined) {
+          return Promise.reject(options.createThrows);
+        }
+        if (claims.includes(args.data.key)) {
+          return Promise.reject(
+            Object.assign(new Error('duplicate key'), { code: 'P2002' }),
+          );
+        }
+        claims.push(args.data.key);
+        return Promise.resolve(args.data);
+      }),
+    },
+    notification: {
+      create: vi.fn((args: { data: { userId: string; template: string } }) => {
+        if (options.notificationThrows !== undefined) {
+          return Promise.reject(options.notificationThrows);
+        }
+        notifications.push({
+          userId: args.data.userId,
+          template: args.data.template,
+        });
+        return Promise.resolve(args.data);
+      }),
+    },
+  };
 
   const prisma = {
     user: {
@@ -37,24 +67,27 @@ function createService(options: StubOptions = {}) {
         })),
       ),
     },
-    idempotencyRecord: {
-      create: vi.fn((args: { data: { key: string } }) => {
-        if (options.createThrows !== undefined) {
-          throw options.createThrows;
-        }
-        claims.push(args.data.key);
-        return Promise.resolve(args.data);
-      }),
-    },
     notification: {
-      create: vi.fn((args: { data: { userId: string; template: string } }) => {
-        notifications.push({
-          userId: args.data.userId,
-          template: args.data.template,
-        });
-        return Promise.resolve(args.data);
-      }),
+      findMany: vi.fn().mockResolvedValue([]),
+      count: vi.fn().mockResolvedValue(0),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      findFirst: vi.fn().mockResolvedValue(null),
     },
+    $transaction: vi.fn(
+      async (callback: (client: typeof tx) => Promise<unknown>) => {
+        const claimsBefore = [...claims];
+        const notificationsBefore = [...notifications];
+        try {
+          return await callback(tx);
+        } catch (error: unknown) {
+          claims.length = 0;
+          claims.push(...claimsBefore);
+          notifications.length = 0;
+          notifications.push(...notificationsBefore);
+          throw error;
+        }
+      },
+    ),
   } as unknown as PrismaService;
 
   return {
@@ -119,6 +152,16 @@ describe('NotificationsService.handleOutboxEvent', () => {
   });
 
   it('skips a duplicate claim for the same event and recipient', async () => {
+    harness = createService();
+
+    await harness.service.handleOutboxEvent(leakReported);
+    const created = await harness.service.handleOutboxEvent(leakReported);
+
+    expect(created).toBe(0);
+    expect(harness.notifications).toHaveLength(1);
+  });
+
+  it('treats a unique violation while claiming as already delivered', async () => {
     harness = createService({
       createThrows: Object.assign(new Error('unique'), { code: 'P2002' }),
     });
@@ -134,6 +177,63 @@ describe('NotificationsService.handleOutboxEvent', () => {
     await expect(
       harness.service.handleOutboxEvent(leakReported),
     ).rejects.toThrow('connection lost');
+  });
+
+  it('releases the claim when the notification write fails', async () => {
+    harness = createService({
+      notificationThrows: new Error('notification insert failed'),
+    });
+
+    await expect(
+      harness.service.handleOutboxEvent(leakReported),
+    ).rejects.toThrow('notification insert failed');
+    expect(harness.notifications).toHaveLength(0);
+    expect(harness.claims).toHaveLength(0);
+  });
+
+  it('delivers on the retry after a failed notification write', async () => {
+    const broken = createService({
+      notificationThrows: new Error('notification insert failed'),
+    });
+    await expect(
+      broken.service.handleOutboxEvent(leakReported),
+    ).rejects.toThrow('notification insert failed');
+    expect(broken.claims).toHaveLength(0);
+
+    const recovered = createService();
+    const created = await recovered.service.handleOutboxEvent(leakReported);
+
+    expect(created).toBe(1);
+    expect(recovered.claims).toHaveLength(1);
+    expect(recovered.notifications).toHaveLength(1);
+  });
+
+  it('rolls back the claim when the notification collides', async () => {
+    harness = createService({
+      notificationThrows: Object.assign(new Error('duplicate'), {
+        code: 'P2002',
+      }),
+    });
+
+    const created = await harness.service.handleOutboxEvent(leakReported);
+
+    expect(created).toBe(0);
+    expect(harness.claims).toHaveLength(0);
+  });
+
+  it('does not stop other recipients when one claim collides', async () => {
+    harness = createService({
+      users: [
+        { id: dispatcherId, role: UserRole.DISPATCHER },
+        { id: reporterId, role: UserRole.ADMIN },
+      ],
+    });
+    await harness.service.handleOutboxEvent(leakReported);
+
+    const created = await harness.service.handleOutboxEvent(leakReported);
+
+    expect(created).toBe(0);
+    expect(harness.notifications).toHaveLength(2);
   });
 
   it('keys the idempotency record per event and recipient', async () => {

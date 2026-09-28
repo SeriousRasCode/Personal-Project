@@ -24,6 +24,7 @@ import {
 import {
   resolveNotificationPlan,
   resolveRecipientIds,
+  type NotificationPlan,
   type OutboxEventLike,
 } from './notification-targeting.js';
 
@@ -97,27 +98,44 @@ export class NotificationsService {
     return new Set(userIds.filter((userId) => !disabled.has(userId)));
   }
 
-  private async claimOnce(
-    eventId: string,
+  private async deliver(
+    event: OutboxEnvelope,
+    plan: NotificationPlan,
     userId: string,
     now: Date,
   ): Promise<boolean> {
-    const key = `${eventId}:${userId}:${NotificationChannel.IN_APP}`;
+    const key = `${event.id}:${userId}:${NotificationChannel.IN_APP}`;
     const requestHash = createHash('sha256').update(key).digest('hex');
 
     try {
-      await this.prisma.idempotencyRecord.create({
-        data: {
-          id: randomUUID(),
-          scope: NOTIFICATION_IDEMPOTENCY_SCOPE,
-          key,
-          requestHash,
-          expiresAt: new Date(
-            now.getTime() + IDEMPOTENCY_TTL_DAYS * 86_400_000,
-          ),
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.idempotencyRecord.create({
+          data: {
+            id: randomUUID(),
+            scope: NOTIFICATION_IDEMPOTENCY_SCOPE,
+            key,
+            requestHash,
+            expiresAt: new Date(
+              now.getTime() + IDEMPOTENCY_TTL_DAYS * 86_400_000,
+            ),
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            id: randomUUID(),
+            userId,
+            channel: NotificationChannel.IN_APP,
+            template: plan.template,
+            title: plan.title,
+            body: plan.body,
+            payload: this.payloadRecord(event.payload) as Prisma.InputJsonValue,
+            status: NotificationStatus.QUEUED,
+          },
+        });
+
+        return true;
       });
-      return true;
     } catch (error: unknown) {
       if (this.isUniqueViolation(error)) {
         return false;
@@ -169,24 +187,9 @@ export class NotificationsService {
         continue;
       }
 
-      const claimed = await this.claimOnce(event.id, userId, now);
-      if (!claimed) {
-        continue;
+      if (await this.deliver(event, plan, userId, now)) {
+        created += 1;
       }
-
-      await this.prisma.notification.create({
-        data: {
-          id: randomUUID(),
-          userId,
-          channel: NotificationChannel.IN_APP,
-          template: plan.template,
-          title: plan.title,
-          body: plan.body,
-          payload: this.payloadRecord(event.payload) as Prisma.InputJsonValue,
-          status: NotificationStatus.QUEUED,
-        },
-      });
-      created += 1;
     }
 
     return created;
