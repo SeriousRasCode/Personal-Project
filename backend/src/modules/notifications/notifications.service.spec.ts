@@ -7,6 +7,16 @@ import {
 } from '../../generated/prisma/enums.js';
 import { NOTIFICATION_TEMPLATES } from './notification-targeting.js';
 import { NotificationsService } from './notifications.service.js';
+import type { EncryptionService } from '../../common/auth/encryption.service.js';
+import type { SmsService } from '../sms-ussd/sms/sms.service.js';
+
+const encryptionService = {
+  decrypt: vi.fn((value: string) => value),
+} as unknown as EncryptionService;
+
+const smsService = {
+  send: vi.fn().mockResolvedValue(undefined),
+} as unknown as SmsService;
 
 const dispatcherId = '00000000-0000-0000-0000-000000000001';
 const reporterId = '00000000-0000-0000-0000-000000000002';
@@ -91,7 +101,7 @@ function createService(options: StubOptions = {}) {
   } as unknown as PrismaService;
 
   return {
-    service: new NotificationsService(prisma),
+    service: new NotificationsService(prisma, encryptionService, smsService),
     notifications,
     claims,
   };
@@ -289,7 +299,11 @@ describe('NotificationsService.markRead', () => {
     const prisma = {
       notification: { updateMany, findUnique },
     } as unknown as PrismaService;
-    const service = new NotificationsService(prisma);
+    const service = new NotificationsService(
+      prisma,
+      encryptionService,
+      smsService,
+    );
 
     const result = await service.markRead(dispatcherId, eventId);
 
@@ -319,7 +333,11 @@ describe('NotificationsService.markRead', () => {
         }),
       },
     } as unknown as PrismaService;
-    const service = new NotificationsService(prisma);
+    const service = new NotificationsService(
+      prisma,
+      encryptionService,
+      smsService,
+    );
 
     const result = await service.markRead(dispatcherId, eventId);
 
@@ -333,7 +351,11 @@ describe('NotificationsService.markRead', () => {
         findFirst: vi.fn().mockResolvedValue(null),
       },
     } as unknown as PrismaService;
-    const service = new NotificationsService(prisma);
+    const service = new NotificationsService(
+      prisma,
+      encryptionService,
+      smsService,
+    );
 
     await expect(service.markRead(dispatcherId, eventId)).rejects.toThrow(
       'Notification not found',

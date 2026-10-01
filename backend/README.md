@@ -57,6 +57,7 @@ LocalStack state on the next `infra:up`.
 | `notifications` | In-app inbox, per-channel preferences, and idempotent delivery   |
 | `telemetry`   | Sensor registry, pressure readings, and hourly aggregates          |
 | `maintenance` | Pipeline and valve registry with the valve position lifecycle      |
+| `sms-ussd`    | SMS provider, OTP delivery, and the USSD self-service menu            |
 | `health`      | Liveness and readiness probes                                       |
 
 `prisma` owns database access and `queues` owns the BullMQ wiring. Both are registered
@@ -189,6 +190,32 @@ and `lastChangedById`, and audits `valve.opened` or `valve.closed`. Registry wri
 limited to admins and dispatchers, while valve operation is also open to field
 technicians. Both registries support `expectedUpdatedAt`, so a concurrent edit returns
 `409` instead of overwriting.
+
+## SMS and USSD
+
+SMS is delivered through a provider chosen by `SMS_PROVIDER`. `log` writes the message to the
+application log and is the default, while `http` posts to `SMS_API_URL` with
+`Authorization: Bearer $SMS_API_KEY`. An `http` configuration missing either value falls back
+to `log` with a warning rather than dropping the message.
+
+`identity.otp.requested` is dispatched to SMS. The code is decrypted from the challenge only
+at send time and is written to the provider alone, so the stored notification records that a
+code went out without persisting the secret. Delivery reuses the notification idempotency key
+`event:user:SMS`: a replayed event cannot send a second message, and a failed send releases
+the claim and marks the notification `FAILED` so the outbox retry can try again.
+
+`POST /api/v1/ussd/callback` is the provider facing USSD entry point. It is public but every
+request must carry `x-ussd-timestamp` and `x-ussd-signature`, where the signature is
+`HMAC-SHA256(USSD_CALLBACK_SECRET, "<timestamp>.<raw body>")`. Verification is timing safe,
+the timestamp must be within five minutes, and a payload edited in flight no longer matches.
+
+A session is keyed by `sessionKey` and expires after five minutes. Selecting an option moves
+the stored `menu_path`, `0` ends the session, and `*` returns to the main menu. Menu state is
+pure and unit tested in `ussd/ussd-session.ts`; the service only supplies data. A number with
+no active account is offered registration, while a registered caller sees the water points and
+ratings for their kebele. An expired or foreign session restarts at the main menu rather than
+leaking the previous caller's state. `GET /api/v1/ussd/sessions` lists sessions for admins and
+dispatchers.
 
 ## Tests
 
