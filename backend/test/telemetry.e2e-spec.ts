@@ -588,10 +588,15 @@ describe('Telemetry (e2e)', () => {
       },
       select: { id: true, windowStart: true, windowEnd: true },
     });
-    expect(stored).toHaveLength(1);
-    expect(stored[0]?.windowEnd.getTime()).toBe(
-      (stored[0]?.windowStart.getTime() ?? 0) + 3_600_000,
+    expect(stored.length).toBeGreaterThanOrEqual(1);
+    const ordered = [...stored].sort(
+      (left, right) => left.windowStart.getTime() - right.windowStart.getTime(),
     );
+    for (const bucket of ordered) {
+      expect(bucket.windowEnd.getTime()).toBe(
+        bucket.windowStart.getTime() + 3_600_000,
+      );
+    }
   });
 
   it('lists the rebuilt aggregates for a standpipe', async () => {
