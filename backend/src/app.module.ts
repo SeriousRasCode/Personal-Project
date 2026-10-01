@@ -22,6 +22,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { OutboxModule } from './modules/outbox/outbox.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { SchedulesModule } from './modules/schedules/schedules.module.js';
+import { SmsUssdModule } from './modules/sms-ussd/sms-ussd.module.js';
 import { StandpipesModule } from './modules/standpipes/standpipes.module.js';
 import { TelemetryModule } from './modules/telemetry/telemetry.module.js';
 import { UsersModule } from './modules/users/users.module.js';
@@ -49,6 +50,7 @@ import { WorkOrdersModule } from './modules/work-orders/work-orders.module.js';
     AuthModule,
     UsersModule,
     GeographyModule,
+    SmsUssdModule,
     StandpipesModule,
     MaintenanceModule,
     TelemetryModule,

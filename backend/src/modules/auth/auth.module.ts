@@ -28,6 +28,12 @@ import { OtpService } from './otp.service.js';
     OptionalJwtAuthGuard,
     RolesGuard,
   ],
-  exports: [AuthService, OtpService, TokenService, PasswordService],
+  exports: [
+    AuthService,
+    OtpService,
+    TokenService,
+    PasswordService,
+    EncryptionService,
+  ],
 })
 export class AuthModule {}

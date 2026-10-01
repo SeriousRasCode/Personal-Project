@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { paginated, type PageResult } from '../../common/dto/pagination.dto.js';
+import { EncryptionService } from '../../common/auth/encryption.service.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { SmsService } from '../sms-ussd/sms/sms.service.js';
+import { OTP_REQUESTED_EVENT } from '../auth/otp.service.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import {
   NotificationChannel,
@@ -29,6 +32,7 @@ import {
 } from './notification-targeting.js';
 
 export const NOTIFICATION_IDEMPOTENCY_SCOPE = 'notification';
+export const OTP_SMS_TEMPLATE = 'identity.otp.sms';
 const IDEMPOTENCY_TTL_DAYS = 30;
 
 export interface OutboxEnvelope {
@@ -44,7 +48,11 @@ interface Recipients {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryptionService: EncryptionService,
+    private readonly smsService: SmsService,
+  ) {}
 
   private payloadRecord(payload: unknown): Record<string, unknown> {
     if (
@@ -157,6 +165,10 @@ export class NotificationsService {
     event: OutboxEnvelope,
     now: Date = new Date(),
   ): Promise<number> {
+    if (event.eventType === OTP_REQUESTED_EVENT) {
+      return this.deliverOtpSms(event, now);
+    }
+
     const plan = resolveNotificationPlan({
       eventType: event.eventType,
       payload: this.payloadRecord(event.payload),
@@ -313,5 +325,131 @@ export class NotificationsService {
       createdAt: row.createdAt,
       readAt: row.readAt,
     };
+  }
+
+  /**
+   * The one-time code is only ever written to the provider, never to the database:
+   * the stored notification records that an SMS went out without persisting the secret.
+   */
+  private async deliverOtpSms(
+    event: OutboxEnvelope,
+    now: Date,
+  ): Promise<number> {
+    const payload = this.payloadRecord(event.payload);
+    const challengeId = this.text(payload, 'challengeId');
+    const phone = this.text(payload, 'phone');
+
+    if (challengeId === '' || phone === '') {
+      return 0;
+    }
+
+    const challenge = await this.prisma.otpChallenge.findUnique({
+      where: { id: challengeId },
+      select: {
+        id: true,
+        userId: true,
+        codeCiphertext: true,
+        expiresAt: true,
+        consumedAt: true,
+      },
+    });
+
+    if (
+      challenge === null ||
+      challenge.userId === null ||
+      challenge.codeCiphertext === null ||
+      challenge.consumedAt !== null ||
+      challenge.expiresAt <= now
+    ) {
+      return 0;
+    }
+
+    const code = this.encryptionService.decrypt(challenge.codeCiphertext);
+    const userId = challenge.userId;
+    const key = `${event.id}:${userId}:${NotificationChannel.SMS}`;
+    const requestHash = createHash('sha256').update(key).digest('hex');
+    const notificationId = randomUUID();
+
+    const claimed = await this.prisma
+      .$transaction(async (tx) => {
+        await tx.idempotencyRecord.create({
+          data: {
+            id: randomUUID(),
+            scope: NOTIFICATION_IDEMPOTENCY_SCOPE,
+            key,
+            requestHash,
+            expiresAt: new Date(
+              now.getTime() + IDEMPOTENCY_TTL_DAYS * 86_400_000,
+            ),
+          },
+        });
+
+        return tx.notification.create({
+          data: {
+            id: notificationId,
+            userId,
+            channel: NotificationChannel.SMS,
+            template: OTP_SMS_TEMPLATE,
+            title: 'Verification code',
+            body: 'A verification code was sent to your phone by SMS.',
+            payload: { challengeId: challenge.id },
+            status: NotificationStatus.PROCESSING,
+          },
+          select: { id: true },
+        });
+      })
+      .catch((error: unknown) => {
+        if (this.isUniqueViolation(error)) {
+          return null;
+        }
+        throw error;
+      });
+
+    if (claimed === null) {
+      return 0;
+    }
+
+    try {
+      await this.smsService.send({
+        to: phone,
+        body: `Your HydroJimma verification code is ${code}. It expires shortly.`,
+      });
+    } catch (error: unknown) {
+      await this.releaseOtpSms(notificationId, key, error);
+      throw error;
+    }
+
+    await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { status: NotificationStatus.SENT, sentAt: now },
+    });
+
+    return 1;
+  }
+
+  private async releaseOtpSms(
+    notificationId: string,
+    key: string,
+    error: unknown,
+  ): Promise<void> {
+    const reason = error instanceof Error ? error.message : String(error);
+
+    await this.prisma.$transaction([
+      this.prisma.idempotencyRecord.deleteMany({
+        where: { scope: NOTIFICATION_IDEMPOTENCY_SCOPE, key },
+      }),
+      this.prisma.notification.update({
+        where: { id: notificationId },
+        data: {
+          status: NotificationStatus.FAILED,
+          failureReason: reason.slice(0, 500),
+        },
+      }),
+    ]);
+  }
+
+  private text(payload: Record<string, unknown>, key: string): string {
+    const value = payload[key];
+    return typeof value === 'string' ? value.trim() : '';
   }
 }
