@@ -33,7 +33,6 @@ export async function configureApp(app: NestFastifyApplication): Promise<void> {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: true },
     }),
   );
   app.useGlobalFilters(new ApiExceptionFilter());
