@@ -17,6 +17,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { ConsensusModule } from './modules/consensus/consensus.module.js';
 import { GeographyModule } from './modules/geography/geography.module.js';
 import { LeaksModule } from './modules/leaks/leaks.module.js';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { OutboxModule } from './modules/outbox/outbox.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
@@ -49,6 +50,7 @@ import { WorkOrdersModule } from './modules/work-orders/work-orders.module.js';
     UsersModule,
     GeographyModule,
     StandpipesModule,
+    MaintenanceModule,
     TelemetryModule,
     SchedulesModule,
     ReportsModule,

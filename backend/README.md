@@ -55,6 +55,8 @@ LocalStack state on the next `infra:up`.
 | `work-orders` | Repair dispatch, assignment, and the work order lifecycle          |
 | `outbox`      | Transactional event dispatcher with retry, backoff, and lock recovery |
 | `notifications` | In-app inbox, per-channel preferences, and idempotent delivery   |
+| `telemetry`   | Sensor registry, pressure readings, and hourly aggregates          |
+| `maintenance` | Pipeline and valve registry with the valve position lifecycle      |
 | `health`      | Liveness and readiness probes                                       |
 
 `prisma` owns database access and `queues` owns the BullMQ wiring. Both are registered
@@ -153,6 +155,40 @@ Delivery is exactly once per event and recipient. The idempotency record and the
 are written in one transaction keyed on `event:user:channel`, so a failure part-way through
 releases the claim instead of consuming it, and replaying an event cannot duplicate an inbox
 entry.
+
+## Telemetry and pressure monitoring
+
+Telemetry sensors are registered against a standpipe with a `SensorType`
+(`PRESSURE`, `FLOW`, `COMBINED`, or `SIMULATOR`) and an optional unique `externalId`.
+Readings are appended with `POST /api/v1/telemetry/readings` or
+`POST /api/v1/telemetry/readings/batch` and are idempotent per sensor `externalId`, so a
+gateway retry cannot duplicate a sample. Ingest also stamps the sensor's `lastSeenAt`
+without rebuilding the row, which keeps the sensor's optimistic lock stable for
+concurrent registry edits.
+
+Reading `source` is restricted: `SENSOR`, `CSV_IMPORT`, and `SIMULATOR` ingest is
+admin-only, while `MANUAL` is available to admins, dispatchers, and field technicians.
+`GET /api/v1/telemetry/pressure-stats` summarises a window and flags a low-pressure
+condition below `TELEMETRY_LOW_PRESSURE_BAR` (default `1.5`).
+
+Aggregates are produced by `POST /api/v1/telemetry/aggregates/rebuild`, which groups
+readings into fixed `windowMinutes` buckets and upserts on `(sensor_id, window_start,
+window_end)`, so a rebuild is idempotent and a re-run overwrites rather than duplicates
+buckets.
+
+## Pipeline and valve maintenance
+
+Pipelines are registered per kebele with a GeoJSON `LineString` path, material, optional
+diameter, and installation date. Valves are registered with a unique upper-cased `code`
+and a GeoJSON `Point` location, and start `CLOSED`.
+
+`POST /api/v1/maintenance/valves/:id/state` drives the position lifecycle `CLOSED` to
+`OPEN` and back. Requesting the position a valve already holds is a `409`, and each
+accepted transition is transactional (`SELECT ... FOR UPDATE`), records `lastChangedAt`
+and `lastChangedById`, and audits `valve.opened` or `valve.closed`. Registry writes are
+limited to admins and dispatchers, while valve operation is also open to field
+technicians. Both registries support `expectedUpdatedAt`, so a concurrent edit returns
+`409` instead of overwriting.
 
 ## Tests
 
