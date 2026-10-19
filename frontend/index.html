@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#0b575b" />
     <meta name="api-base" content="http://localhost:3000/api/v1" />
-    <meta name="description" content="Find water points, share flow updates, and report leaks in Jimma." />
+    <meta
+      name="description"
+      content="Find water points, share flow updates, and report leaks in Jimma."
+    />
     <title>HydroJimma · Water, together</title>
     <link rel="stylesheet" href="./styles.css" />
     <script type="module" src="./app.js"></script>
@@ -16,95 +19,540 @@
       <aside class="sidebar" aria-label="Primary navigation">
         <a class="brand" href="#overview" aria-label="HydroJimma home">
           <span class="brand-mark" aria-hidden="true">◉</span>
-          <span><strong>HydroJimma</strong><small>Water, together.</small></span>
+          <span
+            ><strong>HydroJimma</strong><small>Water, together.</small></span
+          >
         </a>
         <p class="nav-caption">COMMUNITY</p>
         <nav class="nav-list" aria-label="Main menu">
-          <a href="#overview" data-nav="overview" class="nav-link"><span aria-hidden="true">⌂</span> Overview</a>
-          <a href="#water-points" data-nav="water-points" class="nav-link"><span aria-hidden="true">◉</span> Water points</a>
-          <a href="#leaks" data-nav="leaks" class="nav-link"><span aria-hidden="true">⌁</span> Leak activity</a>
-          <a href="#report" data-nav="report" class="nav-link"><span aria-hidden="true">＋</span> Make a report</a>
+          <a href="#overview" data-nav="overview" class="nav-link"
+            ><span aria-hidden="true">⌂</span> Overview</a
+          >
+          <a href="#water-points" data-nav="water-points" class="nav-link"
+            ><span aria-hidden="true">◉</span> Water points</a
+          >
+          <a href="#leaks" data-nav="leaks" class="nav-link"
+            ><span aria-hidden="true">⌁</span> Leak activity</a
+          >
+          <a href="#report" data-nav="report" class="nav-link"
+            ><span aria-hidden="true">＋</span> Make a report</a
+          >
         </nav>
         <p class="nav-caption nav-caption-second">YOUR SPACE</p>
         <nav class="nav-list" aria-label="Account menu">
-          <a href="#inbox" data-nav="inbox" class="nav-link"><span aria-hidden="true">✉</span> Inbox <span id="unread-badge" class="badge" hidden></span></a>
-          <a href="#account" data-nav="account" class="nav-link"><span aria-hidden="true">◌</span> Account</a>
+          <a href="#inbox" data-nav="inbox" class="nav-link"
+            ><span aria-hidden="true">✉</span> Inbox
+            <span id="unread-badge" class="badge" hidden></span
+          ></a>
+          <a href="#account" data-nav="account" class="nav-link"
+            ><span aria-hidden="true">◌</span> Account</a
+          >
         </nav>
         <div class="sidebar-footer">
           <span class="live-dot" aria-hidden="true"></span>
-          <span>Community water network<br /><small>Jimma, Ethiopia</small></span>
+          <span
+            >Community water network<br /><small>Jimma, Ethiopia</small></span
+          >
         </div>
       </aside>
 
       <div class="main-column">
         <header class="topbar">
-          <button id="menu-button" class="icon-button mobile-only" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
-          <div class="breadcrumb"><span>HydroJimma</span><span aria-hidden="true">/</span><strong id="page-label">Overview</strong></div>
+          <button
+            id="menu-button"
+            class="icon-button mobile-only"
+            type="button"
+            aria-label="Open navigation"
+            aria-expanded="false"
+          >
+            ☰
+          </button>
+          <div class="breadcrumb">
+            <span>HydroJimma</span><span aria-hidden="true">/</span
+            ><strong id="page-label">Overview</strong>
+          </div>
           <div class="top-actions">
-            <span id="connection-label" class="connection-label">Connecting to network</span>
-            <button id="auth-button" type="button" class="button button-outline">Sign in</button>
+            <span id="connection-label" class="connection-label"
+              >Connecting to network</span
+            >
+            <button
+              id="auth-button"
+              type="button"
+              class="button button-outline"
+            >
+              Sign in
+            </button>
           </div>
         </header>
         <main id="main" tabindex="-1">
-          <div id="alert" class="alert" role="status" aria-live="polite" hidden></div>
-          <section id="view-overview" class="view" aria-labelledby="overview-title">
+          <div
+            id="alert"
+            class="alert"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></div>
+          <section
+            id="view-overview"
+            class="view"
+            aria-labelledby="overview-title"
+          >
             <div class="hero">
               <div class="hero-copy">
                 <p class="eyebrow">JIMMA WATER NETWORK</p>
                 <h1 id="overview-title">Know where water is flowing.</h1>
-                <p>Find a nearby water point, share what you see, and help the community respond faster.</p>
+                <p>
+                  Find a nearby water point, share what you see, and help the
+                  community respond faster.
+                </p>
                 <div class="hero-actions">
-                  <a href="#water-points" class="button button-light">Explore water points <span aria-hidden="true">↗</span></a>
-                  <a href="#report" class="button button-ghost">Report a problem</a>
+                  <a href="#water-points" class="button button-light"
+                    >Explore water points <span aria-hidden="true">↗</span></a
+                  >
+                  <a href="#report" class="button button-ghost"
+                    >Report a problem</a
+                  >
                 </div>
               </div>
-              <div class="hero-art" aria-hidden="true"><span class="drop drop-one"></span><span class="drop drop-two"></span><span class="drop drop-three"></span><span class="orbit"></span></div>
+              <div class="hero-art" aria-hidden="true">
+                <span class="drop drop-one"></span
+                ><span class="drop drop-two"></span
+                ><span class="drop drop-three"></span
+                ><span class="orbit"></span>
+              </div>
             </div>
-            <div class="section-heading"><div><p class="eyebrow">AT A GLANCE</p><h2>Community pulse</h2></div><span class="section-note">Live information from the network</span></div>
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">AT A GLANCE</p>
+                <h2>Community pulse</h2>
+              </div>
+              <span class="section-note"
+                >Live information from the network</span
+              >
+            </div>
             <div class="stat-grid">
-              <article class="stat-card"><span class="stat-icon teal">◉</span><strong id="stat-points">—</strong><span>Public water points</span></article>
-              <article class="stat-card"><span class="stat-icon amber">⌁</span><strong id="stat-leaks">—</strong><span>Active leak areas</span></article>
-              <article class="stat-card stat-card-callout"><span class="stat-icon blue">＋</span><strong>See something?</strong><span>Your report helps everyone plan.</span><a href="#report">Send an update <span aria-hidden="true">→</span></a></article>
+              <article class="stat-card">
+                <span class="stat-icon teal">◉</span
+                ><strong id="stat-points">—</strong
+                ><span>Public water points</span>
+              </article>
+              <article class="stat-card">
+                <span class="stat-icon amber">⌁</span
+                ><strong id="stat-leaks">—</strong
+                ><span>Active leak areas</span>
+              </article>
+              <article class="stat-card stat-card-callout">
+                <span class="stat-icon blue">＋</span
+                ><strong>See something?</strong
+                ><span>Your report helps everyone plan.</span
+                ><a href="#report"
+                  >Send an update <span aria-hidden="true">→</span></a
+                >
+              </article>
             </div>
             <div class="split-grid">
-              <section class="panel" aria-labelledby="nearby-title"><div class="panel-heading"><div><p class="eyebrow">WATER ACCESS</p><h2 id="nearby-title">Water points</h2></div><a href="#water-points">View all →</a></div><div id="overview-points" class="item-list"><p class="muted">Loading water points…</p></div></section>
-              <section class="panel" aria-labelledby="activity-title"><div class="panel-heading"><div><p class="eyebrow">COMMUNITY UPDATES</p><h2 id="activity-title">Active leaks</h2></div><a href="#leaks">View all →</a></div><div id="overview-leaks" class="item-list"><p class="muted">Loading leak activity…</p></div></section>
+              <section class="panel" aria-labelledby="nearby-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">WATER ACCESS</p>
+                    <h2 id="nearby-title">Water points</h2>
+                  </div>
+                  <a href="#water-points">View all →</a>
+                </div>
+                <div id="overview-points" class="item-list">
+                  <p class="muted">Loading water points…</p>
+                </div>
+              </section>
+              <section class="panel" aria-labelledby="activity-title">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">COMMUNITY UPDATES</p>
+                    <h2 id="activity-title">Active leaks</h2>
+                  </div>
+                  <a href="#leaks">View all →</a>
+                </div>
+                <div id="overview-leaks" class="item-list">
+                  <p class="muted">Loading leak activity…</p>
+                </div>
+              </section>
             </div>
           </section>
 
-          <section id="view-water-points" class="view" hidden aria-labelledby="points-title">
-            <div class="page-heading"><div><p class="eyebrow">WATER ACCESS</p><h1 id="points-title">Water points</h1><p>Browse public standpipes and share a fresh update when you visit.</p></div><span class="heading-symbol" aria-hidden="true">◉</span></div>
-            <div class="toolbar"><label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Search water points</span><input id="point-search" type="search" placeholder="Search by name or code" /></label><button id="refresh-points" class="button button-outline" type="button">Refresh</button></div>
+          <section
+            id="view-water-points"
+            class="view"
+            hidden
+            aria-labelledby="points-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">WATER ACCESS</p>
+                <h1 id="points-title">Water points</h1>
+                <p>
+                  Browse public standpipes and share a fresh update when you
+                  visit.
+                </p>
+              </div>
+              <span class="heading-symbol" aria-hidden="true">◉</span>
+            </div>
+            <div class="toolbar">
+              <label class="search-box"
+                ><span aria-hidden="true">⌕</span
+                ><span class="sr-only">Search water points</span
+                ><input
+                  id="point-search"
+                  type="search"
+                  placeholder="Search by name or code" /></label
+              ><button
+                id="refresh-points"
+                class="button button-outline"
+                type="button"
+              >
+                Refresh
+              </button>
+            </div>
             <div id="points-list" class="card-grid" aria-live="polite"></div>
             <div id="point-detail" class="panel detail-panel" hidden></div>
           </section>
 
-          <section id="view-leaks" class="view" hidden aria-labelledby="leaks-title">
-            <div class="page-heading"><div><p class="eyebrow">COMMUNITY UPDATES</p><h1 id="leaks-title">Leak activity</h1><p>Unresolved reports grouped by nearby location. New observations help response teams prioritize.</p></div><span class="heading-symbol" aria-hidden="true">⌁</span></div>
+          <section
+            id="view-leaks"
+            class="view"
+            hidden
+            aria-labelledby="leaks-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">COMMUNITY UPDATES</p>
+                <h1 id="leaks-title">Leak activity</h1>
+                <p>
+                  Unresolved reports grouped by nearby location. New
+                  observations help response teams prioritize.
+                </p>
+              </div>
+              <span class="heading-symbol" aria-hidden="true">⌁</span>
+            </div>
             <div id="leaks-list" class="card-grid" aria-live="polite"></div>
           </section>
 
-          <section id="view-report" class="view" hidden aria-labelledby="report-title">
-            <div class="page-heading"><div><p class="eyebrow">HELP YOUR NEIGHBORHOOD</p><h1 id="report-title">Make a report</h1><p>Share an observation from the field. Your details help others make better decisions.</p></div><span class="heading-symbol" aria-hidden="true">＋</span></div>
-            <div id="report-gate" class="panel gate-panel" hidden><h2>Sign in to report</h2><p>Reports are linked to your account so updates can reach you.</p><button class="button button-primary" data-open-auth type="button">Sign in or create an account</button></div>
-            <div id="report-content" class="report-layout">
-              <div class="panel"><div class="panel-heading"><div><p class="eyebrow">CHOOSE WHAT TO SHARE</p><h2>Observation type</h2></div></div><div class="segmented" role="group" aria-label="Report type"><button type="button" class="selected" data-report-tab="flow">Water flow</button><button type="button" data-report-tab="queue">Queue wait</button><button type="button" data-report-tab="leak">Leak</button></div>
-                <form id="flow-form" class="form-stack"><label>Water point<select name="standpipeId" id="flow-point" required></select></label><fieldset><legend>What is the flow like?</legend><div class="radio-cards"><label><input type="radio" name="status" value="FULL_FLOW" required /><span>Full flow</span></label><label><input type="radio" name="status" value="TRICKLE" /><span>Trickle</span></label><label><input type="radio" name="status" value="DRY" /><span>Dry</span></label></div></fieldset><label>Note <span class="optional">optional</span><textarea name="note" rows="3" maxlength="500" placeholder="Anything else people should know?"></textarea></label><button class="button button-primary" type="submit">Submit flow update</button></form>
-                <form id="queue-form" class="form-stack" hidden><label>Water point<select name="standpipeId" id="queue-point" required></select></label><div class="form-row"><label>Wait time in minutes<input name="waitMinutes" type="number" min="0" max="1440" required /></label><label>People in queue <span class="optional">optional</span><input name="queueSize" type="number" min="0" max="10000" /></label></div><button class="button button-primary" type="submit">Submit queue update</button></form>
-                <form id="leak-form" class="form-stack" hidden><label>What did you notice?<textarea name="description" rows="4" minlength="10" maxlength="2000" required placeholder="Describe the leak and any nearby landmark"></textarea></label><div class="form-row"><label>Longitude<input name="longitude" type="number" min="-180" max="180" step="any" required /></label><label>Latitude<input name="latitude" type="number" min="-90" max="90" step="any" required /></label></div><button id="locate-button" class="button button-outline" type="button">Use my current location</button><label>Severity<select name="severity"><option value="LOW">Low</option><option value="MEDIUM" selected>Medium</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option></select></label><label>Photo <span class="optional">optional, up to 10 MB</span><input name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/heic" /></label><button class="button button-primary" type="submit">Submit leak report</button></form>
+          <section
+            id="view-report"
+            class="view"
+            hidden
+            aria-labelledby="report-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">HELP YOUR NEIGHBORHOOD</p>
+                <h1 id="report-title">Make a report</h1>
+                <p>
+                  Share an observation from the field. Your details help others
+                  make better decisions.
+                </p>
               </div>
-              <aside class="tip-card"><span class="tip-icon" aria-hidden="true">✦</span><h2>A better report helps everyone</h2><p>Include a nearby landmark, the time you observed it, and a photo when it is safe to take one.</p><p>For urgent hazards, contact local emergency services directly.</p></aside>
+              <span class="heading-symbol" aria-hidden="true">＋</span>
+            </div>
+            <div id="report-gate" class="panel gate-panel" hidden>
+              <h2>Sign in to report</h2>
+              <p>
+                Reports are linked to your account so updates can reach you.
+              </p>
+              <button
+                class="button button-primary"
+                data-open-auth
+                type="button"
+              >
+                Sign in or create an account
+              </button>
+            </div>
+            <div id="report-content" class="report-layout">
+              <div class="panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">CHOOSE WHAT TO SHARE</p>
+                    <h2>Observation type</h2>
+                  </div>
+                </div>
+                <div class="segmented" role="group" aria-label="Report type">
+                  <button type="button" class="selected" data-report-tab="flow">
+                    Water flow</button
+                  ><button type="button" data-report-tab="queue">
+                    Queue wait</button
+                  ><button type="button" data-report-tab="leak">Leak</button>
+                </div>
+                <form id="flow-form" class="form-stack">
+                  <label
+                    >Water point<select
+                      name="standpipeId"
+                      id="flow-point"
+                      required
+                    ></select
+                  ></label>
+                  <fieldset>
+                    <legend>What is the flow like?</legend>
+                    <div class="radio-cards">
+                      <label
+                        ><input
+                          type="radio"
+                          name="status"
+                          value="FULL_FLOW"
+                          required
+                        /><span>Full flow</span></label
+                      ><label
+                        ><input
+                          type="radio"
+                          name="status"
+                          value="TRICKLE"
+                        /><span>Trickle</span></label
+                      ><label
+                        ><input type="radio" name="status" value="DRY" /><span
+                          >Dry</span
+                        ></label
+                      >
+                    </div>
+                  </fieldset>
+                  <label
+                    >Note <span class="optional">optional</span
+                    ><textarea
+                      name="note"
+                      rows="3"
+                      maxlength="500"
+                      placeholder="Anything else people should know?"
+                    ></textarea></label
+                  ><button class="button button-primary" type="submit">
+                    Submit flow update
+                  </button>
+                </form>
+                <form id="queue-form" class="form-stack" hidden>
+                  <label
+                    >Water point<select
+                      name="standpipeId"
+                      id="queue-point"
+                      required
+                    ></select
+                  ></label>
+                  <div class="form-row">
+                    <label
+                      >Wait time in minutes<input
+                        name="waitMinutes"
+                        type="number"
+                        min="0"
+                        max="1440"
+                        required /></label
+                    ><label
+                      >People in queue <span class="optional">optional</span
+                      ><input
+                        name="queueSize"
+                        type="number"
+                        min="0"
+                        max="10000"
+                    /></label>
+                  </div>
+                  <button class="button button-primary" type="submit">
+                    Submit queue update
+                  </button>
+                </form>
+                <form id="leak-form" class="form-stack" hidden>
+                  <label
+                    >What did you notice?<textarea
+                      name="description"
+                      rows="4"
+                      minlength="10"
+                      maxlength="2000"
+                      required
+                      placeholder="Describe the leak and any nearby landmark"
+                    ></textarea>
+                  </label>
+                  <div class="form-row">
+                    <label
+                      >Longitude<input
+                        name="longitude"
+                        type="number"
+                        min="-180"
+                        max="180"
+                        step="any"
+                        required /></label
+                    ><label
+                      >Latitude<input
+                        name="latitude"
+                        type="number"
+                        min="-90"
+                        max="90"
+                        step="any"
+                        required
+                    /></label>
+                  </div>
+                  <button
+                    id="locate-button"
+                    class="button button-outline"
+                    type="button"
+                  >
+                    Use my current location</button
+                  ><label
+                    >Severity<select name="severity">
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM" selected>Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="CRITICAL">Critical</option>
+                    </select></label
+                  ><label
+                    >Photo <span class="optional">optional, up to 10 MB</span
+                    ><input
+                      name="photo"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic" /></label
+                  ><button class="button button-primary" type="submit">
+                    Submit leak report
+                  </button>
+                </form>
+              </div>
+              <aside class="tip-card">
+                <span class="tip-icon" aria-hidden="true">✦</span>
+                <h2>A better report helps everyone</h2>
+                <p>
+                  Include a nearby landmark, the time you observed it, and a
+                  photo when it is safe to take one.
+                </p>
+                <p>
+                  For urgent hazards, contact local emergency services directly.
+                </p>
+              </aside>
             </div>
           </section>
 
-          <section id="view-inbox" class="view" hidden aria-labelledby="inbox-title"><div class="page-heading"><div><p class="eyebrow">YOUR SPACE</p><h1 id="inbox-title">Inbox</h1><p>Updates about reports and work in your area.</p></div><span class="heading-symbol" aria-hidden="true">✉</span></div><div id="inbox-gate" class="panel gate-panel" hidden><h2>Sign in to see your inbox</h2><button class="button button-primary" data-open-auth type="button">Sign in</button></div><div id="inbox-list" class="panel item-list"></div></section>
+          <section
+            id="view-inbox"
+            class="view"
+            hidden
+            aria-labelledby="inbox-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">YOUR SPACE</p>
+                <h1 id="inbox-title">Inbox</h1>
+                <p>Updates about reports and work in your area.</p>
+              </div>
+              <span class="heading-symbol" aria-hidden="true">✉</span>
+            </div>
+            <div id="inbox-gate" class="panel gate-panel" hidden>
+              <h2>Sign in to see your inbox</h2>
+              <button
+                class="button button-primary"
+                data-open-auth
+                type="button"
+              >
+                Sign in
+              </button>
+            </div>
+            <div id="inbox-list" class="panel item-list"></div>
+          </section>
 
-          <section id="view-account" class="view" hidden aria-labelledby="account-title"><div class="page-heading"><div><p class="eyebrow">YOUR SPACE</p><h1 id="account-title">Account</h1><p>Manage your HydroJimma session.</p></div><span class="heading-symbol" aria-hidden="true">◌</span></div><div id="account-content" class="panel account-panel"></div></section>
+          <section
+            id="view-account"
+            class="view"
+            hidden
+            aria-labelledby="account-title"
+          >
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">YOUR SPACE</p>
+                <h1 id="account-title">Account</h1>
+                <p>Manage your HydroJimma session.</p>
+              </div>
+              <span class="heading-symbol" aria-hidden="true">◌</span>
+            </div>
+            <div id="account-content" class="panel account-panel"></div>
+          </section>
         </main>
-        <footer class="footer"><span>HydroJimma · Built for Jimma's water community</span><span>Information is community reported. Confirm conditions before travel.</span></footer>
+        <footer class="footer">
+          <span>HydroJimma · Built for Jimma's water community</span
+          ><span
+            >Information is community reported. Confirm conditions before
+            travel.</span
+          >
+        </footer>
       </div>
     </div>
 
-    <dialog id="auth-dialog" class="auth-dialog" aria-labelledby="auth-title"><button id="close-auth" class="dialog-close" type="button" aria-label="Close">×</button><div class="dialog-mark" aria-hidden="true">◉</div><p class="eyebrow">WELCOME TO HYDROJIMMA</p><h2 id="auth-title">Sign in</h2><p id="auth-subtitle">Your water community starts here.</p><div class="segmented auth-tabs" role="group" aria-label="Account action"><button type="button" data-auth-tab="login" class="selected">Sign in</button><button type="button" data-auth-tab="register">Create account</button></div><form id="login-form" class="form-stack"><label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="+251900000000" required /></label><label>Password<input name="password" type="password" autocomplete="current-password" required /></label><button class="button button-primary" type="submit">Sign in</button></form><form id="register-form" class="form-stack" hidden><label>Your name<input name="displayName" maxlength="120" autocomplete="name" required /></label><label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="+251900000000" required /></label><label>Password<input name="password" type="password" minlength="12" autocomplete="new-password" required /></label><p class="form-hint">Use at least 12 characters with upper and lower case letters, a number, and a symbol.</p><button class="button button-primary" type="submit">Create account</button></form><form id="verify-form" class="form-stack" hidden><label>Verification code<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required /></label><p class="form-hint">Enter the six-digit code sent to your phone.</p><button class="button button-primary" type="submit">Verify phone</button></form></dialog>
+    <dialog id="auth-dialog" class="auth-dialog" aria-labelledby="auth-title">
+      <button
+        id="close-auth"
+        class="dialog-close"
+        type="button"
+        aria-label="Close"
+      >
+        ×
+      </button>
+      <div class="dialog-mark" aria-hidden="true">◉</div>
+      <p class="eyebrow">WELCOME TO HYDROJIMMA</p>
+      <h2 id="auth-title">Sign in</h2>
+      <p id="auth-subtitle">Your water community starts here.</p>
+      <div class="segmented auth-tabs" role="group" aria-label="Account action">
+        <button type="button" data-auth-tab="login" class="selected">
+          Sign in</button
+        ><button type="button" data-auth-tab="register">Create account</button>
+      </div>
+      <form id="login-form" class="form-stack">
+        <label
+          >Phone number<input
+            name="phone"
+            type="tel"
+            autocomplete="tel"
+            placeholder="+251900000000"
+            required /></label
+        ><label
+          >Password<input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required /></label
+        ><button class="button button-primary" type="submit">Sign in</button>
+      </form>
+      <form id="register-form" class="form-stack" hidden>
+        <label
+          >Your name<input
+            name="displayName"
+            maxlength="120"
+            autocomplete="name"
+            required /></label
+        ><label
+          >Phone number<input
+            name="phone"
+            type="tel"
+            autocomplete="tel"
+            placeholder="+251900000000"
+            required /></label
+        ><label
+          >Password<input
+            name="password"
+            type="password"
+            minlength="12"
+            autocomplete="new-password"
+            required
+        /></label>
+        <p class="form-hint">
+          Use at least 12 characters with upper and lower case letters, a
+          number, and a symbol.
+        </p>
+        <button class="button button-primary" type="submit">
+          Create account
+        </button>
+      </form>
+      <form id="verify-form" class="form-stack" hidden>
+        <label
+          >Verification code<input
+            name="code"
+            inputmode="numeric"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            autocomplete="one-time-code"
+            required
+        /></label>
+        <p class="form-hint">Enter the six-digit code sent to your phone.</p>
+        <button class="button button-primary" type="submit">
+          Verify phone
+        </button>
+      </form>
+    </dialog>
   </body>
 </html>
