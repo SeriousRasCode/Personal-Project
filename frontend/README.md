@@ -9,8 +9,11 @@ leaks, and displays their notifications.
 1. Start the backend on `http://localhost:3000` using the steps in
    [backend/README.md](../backend/README.md). Its `CORS_ORIGINS` should include
    `http://localhost:3001`, as in the backend example environment.
-2. From this directory run `npm run dev` (Node.js 22.12 or newer).
+2. From this directory run `npm run dev` (Node.js 22.12 or newer). This starts
+   the API if it is not already running. PostgreSQL and Redis must be running.
 3. Open `http://localhost:3001`.
+
+Use `npm run dev:frontend` if you want to start only the static frontend server.
 
 The API address is the `api-base` meta tag in `index.html`. Change it if the
 backend runs elsewhere. The local server serves files without a build step or
