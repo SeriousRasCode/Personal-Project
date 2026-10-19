@@ -180,7 +180,7 @@ describe('Outbox dispatcher and notifications (e2e)', () => {
       url: '/api/v1/leaks/reports',
       headers: auth(citizenToken),
       payload: {
-        location: { longitude: 36.8319, latitude: 7.6667 },
+        location: { longitude: 36.9341, latitude: 7.7123 },
         description: DESCRIPTION,
         severity: 'HIGH',
       },
