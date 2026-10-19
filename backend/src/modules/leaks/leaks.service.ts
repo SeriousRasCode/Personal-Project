@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
 import { resolveObservedAt } from '../../common/dates.js';
@@ -12,6 +16,7 @@ import {
   UserRole,
 } from '../../generated/prisma/enums.js';
 import { AuditService } from '../audit/audit.service.js';
+import { StorageService } from '../storage/storage.service.js';
 import {
   assertLeakStatusTransition,
   clampConfidence,
@@ -156,6 +161,7 @@ export class LeaksService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly audit: AuditService,
+    private readonly storageService: StorageService,
   ) {}
 
   private thresholds(): ClusterThresholds {
@@ -297,6 +303,17 @@ export class LeaksService {
     now: Date = new Date(),
   ): Promise<LeakReportCreatedResponseDto> {
     const point = assertPoint(dto.location, 'location');
+
+    if (dto.photoObjectKey) {
+      if (!actor) {
+        throw new ForbiddenException(
+          'A photo can only be attached by the account that uploaded it',
+        );
+      }
+
+      this.storageService.assertCanAttach(dto.photoObjectKey, actor);
+      await this.storageService.assertExists(dto.photoObjectKey);
+    }
     const observedAt = resolveObservedAt(dto.observedAt, now);
     const confidence = resolveLeakConfidence(
       actor?.role ?? null,
