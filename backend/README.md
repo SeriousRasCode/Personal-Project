@@ -58,6 +58,7 @@ LocalStack state on the next `infra:up`.
 | `telemetry`   | Sensor registry, pressure readings, and hourly aggregates          |
 | `maintenance` | Pipeline and valve registry with the valve position lifecycle      |
 | `sms-ussd`    | SMS provider, OTP delivery, and the USSD self-service menu            |
+| `storage`     | Presigned photo uploads and downloads for leak reports                |
 | `health`      | Liveness and readiness probes                                       |
 
 `prisma` owns database access and `queues` owns the BullMQ wiring. Both are registered
@@ -83,6 +84,15 @@ Tunables live in `.env` and are validated at startup: `CONSENSUS_WINDOW_HOURS`,
 `QUEUE_SNAPSHOT_MIN_INTERVAL_MINUTES`.
 
 ## Leaks and work orders
+
+To attach a photo, call `POST /api/v1/storage/uploads` with its `contentType` and
+`contentLength`, then upload the bytes to the returned URL using the returned headers.
+For multipart uploads, PUT each part to its URL and call
+`POST /api/v1/storage/uploads/complete` with the upload ID and each part's ETag.
+Pass the resulting `objectKey` as `photoObjectKey` when creating the leak report.
+The API checks that the object exists and belongs to the reporter. Download URLs
+are available from `GET /api/v1/storage/download/:objectKey` to the owner and
+staff reviewers.
 
 Any authenticated user can report a suspected leak. The report point is resolved to a kebele
 and, when a boundary covers it, a neighborhood; otherwise the nearest kebele centre is used.
