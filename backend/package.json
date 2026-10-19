@@ -29,6 +29,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:seed:demo": "tsx prisma/demo-seed.ts",
     "db:studio": "prisma studio",
     "infra:up": "docker compose up -d postgres redis localstack",
     "infra:init": "docker compose up localstack-init",
