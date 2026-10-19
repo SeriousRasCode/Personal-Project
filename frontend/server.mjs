@@ -40,5 +40,6 @@ createServer(async (request, response) => {
     response.end("Not found");
   }
 }).listen(port, host, () => {
-  process.stdout.write(`HydroJimma frontend: http://${host}:${port}\n`);
+  const browserHost = host === '127.0.0.1' ? 'localhost' : host;
+  process.stdout.write(`HydroJimma frontend: http://${browserHost}:${port}\n`);
 });
