@@ -7,7 +7,8 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "node server.mjs",
-    "check": "node --check app.js && node --check api.js && node --check server.mjs"
+    "dev": "node dev-all.mjs",
+    "dev:frontend": "node server.mjs",
+    "check": "node --check app.js && node --check api.js && node --check server.mjs && node --check dev-all.mjs"
   }
 }
