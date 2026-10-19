@@ -15,9 +15,11 @@ leaks, and displays their notifications.
 
 Use `npm run dev:frontend` if you want to start only the static frontend server.
 
-The API address is the `api-base` meta tag in `index.html`. Change it if the
-backend runs elsewhere. The local server serves files without a build step or
-package install. Run `npm run check` for JavaScript syntax checks.
+The frontend server forwards `/api/v1` requests to the backend on port 3000,
+so the app works from either `localhost:3001` or `127.0.0.1:3001` without API
+CORS configuration. The `api-base` meta tag in `index.html` can be changed for
+another deployment. The local server needs no build step or package install.
+Run `npm run check` for JavaScript syntax checks.
 
 New citizens register, request a phone verification code, and enter it in the
 dialog. The backend's default `log` SMS provider writes the code to the backend
