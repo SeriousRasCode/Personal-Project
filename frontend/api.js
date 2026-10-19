@@ -1,4 +1,4 @@
-const defaultBase = "http://localhost:3000/api/v1";
+const defaultBase = "/api/v1";
 const configuredBase = document.querySelector('meta[name="api-base"]')?.content;
 const API_BASE = (configuredBase || defaultBase).replace(/\/$/, "");
 const SESSION_KEY = "hydrojimma.session";
