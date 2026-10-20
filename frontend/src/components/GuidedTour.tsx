@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { navigation, roleLabels } from "./navigation";
 import { describeField, pageHelp } from "./tour-content";
 import type { Session } from "../lib/api";
@@ -409,26 +410,14 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
         <span aria-hidden="true">✧</span>
         <span>{accountMode ? "Explain this form" : "Take a tour"}</span>
       </button>
-      <dialog
-        ref={chooser}
-        className="tour-choice"
-        aria-labelledby="tour-choice-title"
-        aria-describedby="tour-choice-description"
-        onCancel={() => {
-          try {
-            localStorage.setItem(storageKey, "seen");
-          } catch {
-            /* Storage is optional. */
-          }
-        }}
-      >
-        <div className="tour-meta">
-          <span>EXPLORE AT YOUR PACE</span>
-          <button
-            type="button"
-            aria-label="Close tour options"
-            onClick={() => {
-              chooser.current?.close();
+      {createPortal(
+        <>
+          <dialog
+            ref={chooser}
+            className="tour-choice"
+            aria-labelledby="tour-choice-title"
+            aria-describedby="tour-choice-description"
+            onCancel={() => {
               try {
                 localStorage.setItem(storageKey, "seen");
               } catch {
@@ -436,170 +425,188 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
               }
             }}
           >
-            ×
-          </button>
-        </div>
-        <h2 id="tour-choice-title">What would you like to explore?</h2>
-        <p id="tour-choice-description">
-          Choose a quick guide for this page or a walkthrough of your workspace.
-        </p>
-        <button
-          type="button"
-          className="tour-choice-option"
-          onClick={() => begin("page")}
-        >
-          <span aria-hidden="true">◉</span>
-          <span>
-            <strong>This page</strong>
-            <small>
-              {accountMode
-                ? "Explain this account form"
-                : `Explain ${navigation.find((item) => item.id === (location.hash.slice(1) || "overview"))?.label || "this page"} and its available form fields. Stay right here.`}
-            </small>
-          </span>
-          <span aria-hidden="true">→</span>
-        </button>
-        <button
-          type="button"
-          className="tour-choice-option"
-          onClick={() => begin("all")}
-        >
-          <span aria-hidden="true">◫</span>
-          <span>
-            <strong>Entire workspace</strong>
-            <small>
-              Visit every page available to your role, including forms and
-              examples.
-            </small>
-          </span>
-          <span aria-hidden="true">→</span>
-        </button>
-        <p className="tour-choice-note">
-          You can stop at any time. Tours never submit forms.
-        </p>
-      </dialog>
-      <dialog
-        ref={dialog}
-        className="tour-dialog tour-v2"
-        onCancel={(event) => {
-          event.preventDefault();
-          finish();
-        }}
-        aria-labelledby="tour-title"
-        aria-describedby="tour-description"
-      >
-        {box ? (
-          <div
-            className="tour-spotlight"
-            aria-hidden="true"
-            style={{
-              top: box.top,
-              left: box.left,
-              width: box.width,
-              height: box.height,
-            }}
-          />
-        ) : (
-          <div className="tour-shade" aria-hidden="true" />
-        )}
-        {active?.kind === "field" && fieldBox && (
-          <div
-            className="tour-field-demo"
-            aria-hidden="true"
-            style={{
-              top: fieldBox.top,
-              left: fieldBox.left,
-              width: fieldBox.width,
-              minHeight: fieldBox.height,
-            }}
-          >
-            <span>
-              {active.inputType === "password"
-                ? "•".repeat(typed.length)
-                : typed}
-              <i />
-            </span>
-            <small>Example only · not saved</small>
-          </div>
-        )}
-        <section
-          ref={card}
-          className="tour-card"
-          style={
-            cardPosition
-              ? {
-                  left: cardPosition.left,
-                  top: cardPosition.top,
-                  bottom: "auto",
-                  transform: "none",
-                }
-              : undefined
-          }
-        >
-          <div className="tour-meta">
-            <span>
-              {accountMode ? "ACCOUNT FORM GUIDE" : "PAGE & FORM GUIDE"}
-            </span>
-            <button type="button" onClick={finish} aria-label="Close tour">
-              ×
-            </button>
-          </div>
-          <div key={active?.id} className="tour-copy">
-            <h2 id="tour-title">{active?.title}</h2>
-            <p id="tour-description">{active?.copy}</p>
-          </div>
-          {active?.example && (
-            <div className="tour-example">
-              <span>DEMONSTRATION</span>
-              <code>
-                {active.inputType === "password"
-                  ? "•".repeat(typed.length)
-                  : typed || " "}
-              </code>
-              <small>Example values never replace your inputs.</small>
-            </div>
-          )}
-          <div className="tour-count">
-            Step {(index ?? 0) + 1} of {steps.length}
-            {active?.route
-              ? ` · ${active.route === "auth" ? "Your account" : navigation.find((item) => item.id === active.route)?.label || active.route}`
-              : ""}
-          </div>
-          <div className="tour-actions">
-            <button type="button" onClick={finish} className="tour-skip">
-              Skip tour
-            </button>
-            <div>
-              {index !== null && index > 0 && (
-                <button
-                  type="button"
-                  className="button button-outline"
-                  onClick={() => setIndex(index - 1)}
-                >
-                  Back
-                </button>
-              )}
+            <div className="tour-meta">
+              <span>EXPLORE AT YOUR PACE</span>
               <button
                 type="button"
-                disabled={!ready}
-                className="button button-primary"
-                onClick={() =>
-                  index === steps.length - 1
-                    ? finish()
-                    : setIndex((index ?? 0) + 1)
-                }
+                aria-label="Close tour options"
+                onClick={() => {
+                  chooser.current?.close();
+                  try {
+                    localStorage.setItem(storageKey, "seen");
+                  } catch {
+                    /* Storage is optional. */
+                  }
+                }}
               >
-                {index === steps.length - 1
-                  ? "Finish"
-                  : index === 0
-                    ? "Show me"
-                    : "Next"}{" "}
-                →
+                ×
               </button>
             </div>
-          </div>
-        </section>
-      </dialog>
+            <h2 id="tour-choice-title">What would you like to explore?</h2>
+            <p id="tour-choice-description">
+              Choose a quick guide for this page or a walkthrough of your
+              workspace.
+            </p>
+            <button
+              type="button"
+              className="tour-choice-option"
+              onClick={() => begin("page")}
+            >
+              <span aria-hidden="true">◉</span>
+              <span>
+                <strong>This page</strong>
+                <small>
+                  {accountMode
+                    ? "Explain this account form"
+                    : `Explain ${navigation.find((item) => item.id === (location.hash.slice(1) || "overview"))?.label || "this page"} and its available form fields. Stay right here.`}
+                </small>
+              </span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <button
+              type="button"
+              className="tour-choice-option"
+              onClick={() => begin("all")}
+            >
+              <span aria-hidden="true">◫</span>
+              <span>
+                <strong>Entire workspace</strong>
+                <small>
+                  Visit every page available to your role, including forms and
+                  examples.
+                </small>
+              </span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <p className="tour-choice-note">
+              You can stop at any time. Tours never submit forms.
+            </p>
+          </dialog>
+          <dialog
+            ref={dialog}
+            className="tour-dialog tour-v2"
+            onCancel={(event) => {
+              event.preventDefault();
+              finish();
+            }}
+            aria-labelledby="tour-title"
+            aria-describedby="tour-description"
+          >
+            {box ? (
+              <div
+                className="tour-spotlight"
+                aria-hidden="true"
+                style={{
+                  top: box.top,
+                  left: box.left,
+                  width: box.width,
+                  height: box.height,
+                }}
+              />
+            ) : (
+              <div className="tour-shade" aria-hidden="true" />
+            )}
+            {active?.kind === "field" && fieldBox && (
+              <div
+                className="tour-field-demo"
+                aria-hidden="true"
+                style={{
+                  top: fieldBox.top,
+                  left: fieldBox.left,
+                  width: fieldBox.width,
+                  minHeight: fieldBox.height,
+                }}
+              >
+                <span>
+                  {active.inputType === "password"
+                    ? "•".repeat(typed.length)
+                    : typed}
+                  <i />
+                </span>
+                <small>Example only · not saved</small>
+              </div>
+            )}
+            <section
+              ref={card}
+              className="tour-card"
+              style={
+                cardPosition
+                  ? {
+                      left: cardPosition.left,
+                      top: cardPosition.top,
+                      bottom: "auto",
+                      transform: "none",
+                    }
+                  : undefined
+              }
+            >
+              <div className="tour-meta">
+                <span>
+                  {accountMode ? "ACCOUNT FORM GUIDE" : "PAGE & FORM GUIDE"}
+                </span>
+                <button type="button" onClick={finish} aria-label="Close tour">
+                  ×
+                </button>
+              </div>
+              <div key={active?.id} className="tour-copy">
+                <h2 id="tour-title">{active?.title}</h2>
+                <p id="tour-description">{active?.copy}</p>
+              </div>
+              {active?.example && (
+                <div className="tour-example">
+                  <span>DEMONSTRATION</span>
+                  <code>
+                    {active.inputType === "password"
+                      ? "•".repeat(typed.length)
+                      : typed || " "}
+                  </code>
+                  <small>Example values never replace your inputs.</small>
+                </div>
+              )}
+              <div className="tour-count">
+                Step {(index ?? 0) + 1} of {steps.length}
+                {active?.route
+                  ? ` · ${active.route === "auth" ? "Your account" : navigation.find((item) => item.id === active.route)?.label || active.route}`
+                  : ""}
+              </div>
+              <div className="tour-actions">
+                <button type="button" onClick={finish} className="tour-skip">
+                  Skip tour
+                </button>
+                <div>
+                  {index !== null && index > 0 && (
+                    <button
+                      type="button"
+                      className="button button-outline"
+                      onClick={() => setIndex(index - 1)}
+                    >
+                      Back
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!ready}
+                    className="button button-primary"
+                    onClick={() =>
+                      index === steps.length - 1
+                        ? finish()
+                        : setIndex((index ?? 0) + 1)
+                    }
+                  >
+                    {index === steps.length - 1
+                      ? "Finish"
+                      : index === 0
+                        ? "Show me"
+                        : "Next"}{" "}
+                    →
+                  </button>
+                </div>
+              </div>
+            </section>
+          </dialog>
+        </>,
+        document.body,
+      )}
     </>
   );
 }
