@@ -1,14 +1,131 @@
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
-
+import { useEffect, useState } from "react";
+import { api } from "../lib/api";
+import { DataTable } from "../components/ui";
+export { DataTable as Table } from "../components/ui";
 type Row = Record<string, any>;
-export function Table({ rows, columns, action }: { rows: Row[]; columns: [string, string][]; action?: (row: Row) => React.ReactNode }) { return <div className="table-wrap"><table><thead><tr>{columns.map(([, label]) => <th key={label}>{label}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={row.id || i}>{columns.map(([key]) => <td key={key}>{String(row[key] ?? '—')}</td>)}{action && <td>{action(row)}</td>}</tr>)}</tbody></table></div>; }
-function useRows(endpoint: string) { const [rows, setRows] = useState<Row[]>([]), [error, setError] = useState(''); const load = () => api<{ items: Row[] }>(endpoint).then(x => setRows(x.items || [])).catch(e => setError(e.message)); useEffect(() => { load(); }, [endpoint]); return { rows, error, load }; }
-export function Resource({ endpoint, heading, columns }: { endpoint: string; heading: string; columns: [string, string][] }) { const data = useRows(endpoint); return <section className="panel"><div className="panel-heading"><h1>{heading}</h1><button className="button button-outline" onClick={data.load}>Refresh</button></div>{data.error && <p className="alert">{data.error}</p>}<Table rows={data.rows} columns={columns} /></section>; }
-export function WorkOrders() { const data = useRows('/work-orders?limit=100&page=1'); return <section className="panel"><h1>Work orders</h1><Table rows={data.rows} columns={[["title", "Title"], ["priority", "Priority"], ["status", "Status"]]} /></section>; }
-export function ValveControls() { const data = useRows('/maintenance/valves?limit=100&page=1'); return <section className="panel"><h1>Valve controls</h1><Table rows={data.rows} columns={[["code", "Code"], ["name", "Name"], ["isOpen", "Open"]]} />{data.rows.map(row => <button className="button button-outline" key={row.id} onClick={async () => { await api(`/maintenance/valves/${row.id}/state`, { method: 'POST', body: JSON.stringify({ isOpen: !row.isOpen, expectedUpdatedAt: row.updatedAt }) }); data.load(); }}>{row.isOpen ? 'Close' : 'Open'} {row.code}</button>)}</section>; }
-export function Telemetry() { const data = useRows('/telemetry/sensors?limit=100&page=1'), [message, setMessage] = useState(''); return <><Resource endpoint="/telemetry/sensors?limit=100&page=1" heading="Telemetry sensors" columns={[["name", "Sensor"], ["type", "Type"], ["status", "Status"]]} /><section className="panel"><h2>Record pressure reading</h2><form onSubmit={async e => { e.preventDefault(); const d = new FormData(e.currentTarget); await api('/telemetry/readings', { method: 'POST', body: JSON.stringify({ sensorId: d.get('sensorId') || undefined, pressureBar: Number(d.get('pressureBar')), source: 'MANUAL', observedAt: new Date().toISOString() }) }); setMessage('Reading recorded.'); }}>{data.error && <p className="alert">{data.error}</p>}<label>Sensor ID<input name="sensorId" /></label><label>Pressure bar<input name="pressureBar" type="number" step="0.001" required /></label>{message && <p className="success">{message}</p>}<button className="button button-primary">Record</button></form></section></>; }
-export function Notifications() { const data = useRows('/notifications?limit=100'); return <section className="panel"><h1>Notifications</h1><Table rows={data.rows} columns={[["title", "Title"], ["body", "Message"], ["createdAt", "Received"]]} />{data.rows.filter(row => !row.readAt).map(row => <button className="button button-outline" key={row.id} onClick={async () => { await api(`/notifications/${row.id}/read`, { method: 'PATCH' }); data.load(); }}>Mark read: {row.title}</button>)}</section>; }
-export function Schedules() { const data = useRows('/schedules?limit=100&page=1'); const transition = async (row: Row, action: string) => { await api(`/schedules/${row.id}/${action}`, { method: 'POST', body: JSON.stringify({ updatedAt: row.updatedAt }) }); data.load(); }; return <section className="panel"><h1>Schedule lifecycle</h1><Table rows={data.rows} columns={[["name", "Name"], ["status", "Status"], ["startsOn", "Starts"]]} />{data.rows.map(row => <div key={row.id}>{['publish', 'activate', 'cancel', 'complete'].map(action => <button className="button button-outline" key={action} onClick={() => transition(row, action)}>{action} {row.name}</button>)}</div>)}</section>; }
-export function UserAdministration() { const data = useRows('/users?limit=100&page=1'); const change = async (row: Row, status: string) => { await api(`/users/${row.id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }); data.load(); }; return <section className="panel"><h1>User administration</h1><Table rows={data.rows} columns={[["displayName", "Name"], ["phone", "Phone"], ["role", "Role"], ["status", "Status"]]} action={undefined} />{data.rows.map(row => <select key={row.id} defaultValue={row.status} onChange={e => change(row, e.target.value)}><option>ACTIVE</option><option>DISABLED</option><option>PENDING_VERIFICATION</option></select>)}</section>; }
+function useRows(endpoint: string) {
+  const [rows, setRows] = useState<Row[]>([]),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(true);
+  const load = () => {
+    setLoading(true);
+    setError("");
+    return api<{ items: Row[] }>(endpoint)
+      .then((result) => setRows(result.items))
+      .catch((failure) => setError(failure.message))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => {
+    load();
+  }, [endpoint]);
+  return { rows, error, loading, load };
+}
+export function Resource({
+  endpoint,
+  heading,
+  columns,
+}: {
+  endpoint: string;
+  heading: string;
+  columns: [string, string][];
+}) {
+  const data = useRows(endpoint);
+  return (
+    <section className="panel">
+      <div className="panel-heading">
+        <h1>{heading}</h1>
+        <button
+          className="button button-outline"
+          onClick={data.load}
+          disabled={data.loading}
+        >
+          {data.loading ? "Loading…" : "Refresh"}
+        </button>
+      </div>
+      {data.error && (
+        <p className="alert" role="alert">
+          {data.error}
+        </p>
+      )}
+      <DataTable rows={data.rows} columns={columns} />
+      {!data.loading && !data.error && !data.rows.length && (
+        <p className="empty-state">No records to show yet.</p>
+      )}
+    </section>
+  );
+}
+export function WorkOrders() {
+  const data = useRows("/work-orders?limit=100&page=1");
+  return (
+    <section className="panel">
+      <h1>Work orders</h1>
+      {data.error && (
+        <p className="alert" role="alert">
+          {data.error}
+        </p>
+      )}
+      <DataTable
+        rows={data.rows}
+        columns={[
+          ["title", "Title"],
+          ["priority", "Priority"],
+          ["status", "Status"],
+        ]}
+      />
+    </section>
+  );
+}
+export function Notifications() {
+  const data = useRows("/notifications?limit=100"),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState<string | null>(null);
+  return (
+    <section className="panel">
+      <h1>Inbox</h1>
+      {(error || data.error) && (
+        <p className="alert" role="alert">
+          {error || data.error}
+        </p>
+      )}
+      <DataTable
+        rows={data.rows}
+        columns={[
+          ["title", "Title"],
+          ["body", "Message"],
+          ["createdAt", "Received"],
+        ]}
+        action={(row) =>
+          row.readAt ? (
+            <span>Read</span>
+          ) : (
+            <button
+              className="button button-outline"
+              disabled={busy === row.id}
+              onClick={async () => {
+                setBusy(row.id);
+                setError("");
+                try {
+                  await api(`/notifications/${row.id}/read`, {
+                    method: "PATCH",
+                  });
+                  await data.load();
+                } catch (failure) {
+                  setError((failure as Error).message);
+                } finally {
+                  setBusy(null);
+                }
+              }}
+            >
+              Mark read
+            </button>
+          )
+        }
+      />
+      {!data.loading && !data.rows.length && !data.error && (
+        <p className="empty-state">
+          You’re all caught up. Updates for your account will appear here.
+        </p>
+      )}
+    </section>
+  );
+}
