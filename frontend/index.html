@@ -11,9 +11,13 @@
     />
     <title>HydroJimma · Water, together</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script type="module" src="./app.js"></script>
+    <script type="importmap">{"imports":{"react":"https://esm.sh/react@18.3.1","react-dom/client":"https://esm.sh/react-dom@18.3.1/client"}}</script>
+    <script type="module" src="./react-app.js"></script>
   </head>
   <body>
+    <div id="root"></div>
+    <!-- The legacy markup remains below as a migration reference; React owns the live application. -->
+    <div hidden>
     <a class="skip-link" href="#main">Skip to content</a>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Primary navigation">
@@ -554,5 +558,6 @@
         </button>
       </form>
     </dialog>
+    </div>
   </body>
 </html>
