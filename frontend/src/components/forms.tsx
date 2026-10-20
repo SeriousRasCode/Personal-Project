@@ -113,6 +113,7 @@ export function RecordPicker({
   required = true,
   disabled = false,
   onChange,
+  initialValue = "",
 }: {
   endpoint: string;
   label: string;
@@ -121,10 +122,11 @@ export function RecordPicker({
   required?: boolean;
   disabled?: boolean;
   onChange?: (value: string) => void;
+  initialValue?: string;
 }) {
   const [items, setItems] = useState<Choice[]>([]);
   const [query, setQuery] = useState("");
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
