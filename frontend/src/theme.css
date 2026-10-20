@@ -1,0 +1,187 @@
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: #49665c;
+  border-radius: 9px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.theme-toggle > span:first-child {
+  font-size: 20px;
+  line-height: 1;
+}
+.theme-toggle:hover {
+  background: #edf4f0;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e1ece9;
+  --muted: #9fafb3;
+  --line: #2c3d45;
+  --brand: #81d4b7;
+  background: #111b22;
+  color: #e1ece9;
+}
+[data-theme="dark"] body,
+[data-theme="dark"] .app-shell {
+  background: #111b22;
+  color: var(--ink);
+}
+[data-theme="dark"] .sidebar {
+  background: #142129;
+  border-color: var(--line);
+}
+[data-theme="dark"] .topbar {
+  background: #142129ed;
+  border-color: var(--line);
+}
+[data-theme="dark"] .panel,
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .metrics article {
+  background: #192832;
+  border-color: var(--line);
+  color: var(--ink);
+}
+[data-theme="dark"] .brand-logo {
+  background: #6bcaa7;
+  color: #102a24;
+}
+[data-theme="dark"] .brand strong,
+[data-theme="dark"] .panel h1,
+[data-theme="dark"] .panel h2,
+[data-theme="dark"] .page-heading h1,
+[data-theme="dark"] .metrics h3,
+[data-theme="dark"] .sidebar-bottom strong,
+[data-theme="dark"] .breadcrumb strong {
+  color: var(--ink);
+}
+[data-theme="dark"] .nav-link {
+  color: #a4b8bd;
+}
+[data-theme="dark"] .nav-link:hover {
+  background: #203b3b;
+  color: #b7edda;
+}
+[data-theme="dark"] .nav-link.active {
+  background: #24483e;
+  color: #a0e9c8;
+}
+[data-theme="dark"] .nav-group > p,
+[data-theme="dark"] .eyebrow,
+[data-theme="dark"] .metrics p,
+[data-theme="dark"] .metrics small,
+[data-theme="dark"] .point-list small,
+[data-theme="dark"] .next-steps small,
+[data-theme="dark"] .section-heading p {
+  color: #a3b5ba;
+}
+[data-theme="dark"] .workspace-label {
+  background: #1a2a32;
+  border-color: var(--line);
+  color: #b8d9ca;
+}
+[data-theme="dark"] .sidebar-bottom,
+[data-theme="dark"] .point-list > a,
+[data-theme="dark"] .next-steps > a {
+  border-color: var(--line);
+}
+[data-theme="dark"] .avatar,
+[data-theme="dark"] .metric-icon,
+[data-theme="dark"] .point-symbol {
+  background: #25443e;
+  color: #98dfbd;
+}
+[data-theme="dark"] .metric-icon.amber {
+  background: #423b2a;
+  color: #ebca89;
+}
+[data-theme="dark"] .metrics .metric-action {
+  background: #233c37;
+}
+[data-theme="dark"] .metric-action a,
+[data-theme="dark"] .next-steps strong,
+[data-theme="dark"] .point-list strong {
+  color: #c5e5d6;
+}
+[data-theme="dark"] .welcome-banner {
+  background: linear-gradient(125deg, #17493f, #153c3e);
+}
+[data-theme="dark"] .water-ring span {
+  background: #acd1b7;
+  color: #174b3e;
+}
+[data-theme="dark"] .button-outline,
+[data-theme="dark"] .page-heading .button,
+[data-theme="dark"] .segmented button {
+  background: #20313b;
+  color: #c1d8cf;
+  border-color: #40564f;
+}
+[data-theme="dark"] .button-primary {
+  background: #8ad6b8;
+  color: #11362b;
+}
+[data-theme="dark"] .button-light {
+  background: #d8eae0;
+  color: #18473b;
+}
+[data-theme="dark"] label {
+  color: #c0d0d6;
+}
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #111e27;
+  border-color: #3d515d;
+  color: #dfebe9;
+}
+[data-theme="dark"] th {
+  background: #14232c;
+  color: #afc3c6;
+}
+[data-theme="dark"] td {
+  color: #cedcdd;
+  border-color: var(--line);
+}
+[data-theme="dark"] .table-wrap,
+[data-theme="dark"] th {
+  border-color: var(--line);
+}
+[data-theme="dark"] .theme-toggle {
+  color: #b4d7cb;
+  border-color: #38534d;
+}
+[data-theme="dark"] .theme-toggle:hover {
+  background: #28423d;
+}
+[data-theme="dark"] .alert {
+  background: #3c232b;
+  border-color: #724451;
+  color: #f3b8c0;
+}
+[data-theme="dark"] .success {
+  background: #203e35;
+  color: #a8e3c4;
+}
+[data-theme="dark"] .auth-intro h1 {
+  color: #b4e6d1;
+}
+[data-theme="dark"] .segmented button.selected {
+  background: #315947;
+  color: #c9efdb;
+}
+@media (max-width: 680px) {
+  .theme-toggle {
+    padding: 7px 9px;
+  }
+  .theme-toggle-label {
+    display: none;
+  }
+}
