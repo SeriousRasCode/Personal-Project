@@ -22,6 +22,7 @@ export const pagePermissions: Record<string, Rule> = {
   preferences: "authenticated",
   storage: "authenticated",
   operations: staff,
+  leaks: fieldTeam,
   telemetry: fieldTeam,
   maintenance: fieldTeam,
   geography: fieldTeam,
@@ -31,9 +32,12 @@ export const pagePermissions: Record<string, Rule> = {
   outbox: ["ADMIN"],
 };
 export const actionPermissions: Record<string, Rule> = {
+  "work-order.manage": managers,
+  "leak.triage": managers,
   "area.manage": ["ADMIN"],
   "schedule.manage": managers,
   "sensor.reading": fieldTeam,
+  "sensor.manage": managers,
   "valve.operate": fieldTeam,
   "users.manage": ["ADMIN"],
   "outbox.manage": ["ADMIN"],
