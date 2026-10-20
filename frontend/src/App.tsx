@@ -7,7 +7,6 @@ import { Dashboard } from "./features/dashboard";
 import { navigation, roleLabels } from "./components/navigation";
 import {
   Notifications,
-  Preferences,
   Resource,
   Schedules,
   Telemetry,
@@ -15,6 +14,7 @@ import {
   ValveControls,
   WorkOrders,
 } from "./features/panels";
+import { Preferences } from "./features/preferences";
 import {
   AuditLog,
   OutboxMonitor,
@@ -28,6 +28,7 @@ import "./motion.css";
 import { GuidedTour } from "./components/GuidedTour";
 import "./tour.css";
 import "./tour-details.css";
+import "./interaction-fixes.css";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession());
