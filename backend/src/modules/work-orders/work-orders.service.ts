@@ -241,7 +241,10 @@ export class WorkOrdersService {
     );
   }
 
-  async findWorkOrder(id: string): Promise<WorkOrderResponseDto> {
+  async findWorkOrder(
+    id: string,
+    actor: WorkOrderActor,
+  ): Promise<WorkOrderResponseDto> {
     const row = await this.prisma.workOrder.findUnique({
       where: { id },
       include: WORK_ORDER_INCLUDE,
@@ -251,14 +254,21 @@ export class WorkOrdersService {
       throw new NotFoundException('Work order not found');
     }
 
+    if (!isSupervisoryRole(actor.role) && row.assignedToId !== actor.id) {
+      throw new ForbiddenException(
+        'You can only view work orders assigned to you',
+      );
+    }
+
     return this.mapWorkOrder(row);
   }
 
   async listActivities(
     workOrderId: string,
     query: ListWorkOrderActivitiesQueryDto,
+    actor: WorkOrderActor,
   ): Promise<PageResult<WorkOrderActivityResponseDto>> {
-    await this.assertExists(workOrderId);
+    await this.findWorkOrder(workOrderId, actor);
 
     const where: Prisma.WorkOrderActivityWhereInput = { workOrderId };
     const [rows, total] = await Promise.all([
