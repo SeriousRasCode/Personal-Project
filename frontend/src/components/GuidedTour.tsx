@@ -43,6 +43,8 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
     top: number;
   } | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
+  const chooser = useRef<HTMLDialogElement>(null);
+  const launcher = useRef<HTMLButtonElement>(null);
   const card = useRef<HTMLElement>(null);
   const origin = useRef("");
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -50,14 +52,22 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
   const active = index === null ? null : steps[index];
   const isOpen = index !== null;
 
-  function begin() {
+  function begin(scope: "page" | "all" = "page") {
+    chooser.current?.close();
+    try {
+      if (!accountMode) localStorage.setItem(storageKey, "seen");
+    } catch {
+      /* Storage is optional. */
+    }
+    const currentRoute = location.hash.slice(1) || "overview";
     const destinations = navigation.filter(
       (item) =>
+        (scope === "all" || item.id === currentRoute) &&
         (!item.authenticated || session) &&
         (!item.roles || (session && item.roles.includes(session.user.role))),
     );
     origin.current = location.hash;
-    returnFocus.current = document.activeElement as HTMLElement;
+    returnFocus.current = launcher.current;
     discovered.current.clear();
     const pages: Step[] = accountMode
       ? [
@@ -101,7 +111,10 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
         title: accountMode
           ? "Let’s explain this form."
           : `Your ${roleLabels[session?.user.role || "CITIZEN"] || "workspace"} guide.`,
-        copy: "We’ll open each available page, highlight its content, and explain every form input with an animated example. The tour never submits a form or changes your data. Skip or stop at any time.",
+        copy:
+          scope === "page"
+            ? "This guide stays on your current page. We’ll explain its controls and form fields using animated, read-only examples. Skip or stop at any time."
+            : "We’ll open the pages available to your role and explain their controls and fields with animated, read-only examples. Skip or stop at any time.",
       },
       ...pages,
       {
@@ -120,7 +133,7 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
   useEffect(() => {
     if (accountMode) return;
     try {
-      if (!localStorage.getItem(storageKey)) begin();
+      if (!localStorage.getItem(storageKey)) chooser.current?.showModal();
     } catch {
       /* Manual replay is still available. */
     }
@@ -382,8 +395,11 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
     <>
       <button
         type="button"
+        ref={launcher}
         className="tour-launch"
-        onClick={begin}
+        onClick={() =>
+          accountMode ? begin("page") : chooser.current?.showModal()
+        }
         aria-label={
           accountMode
             ? "Explain this account form"
@@ -393,6 +409,75 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
         <span aria-hidden="true">✧</span>
         <span>{accountMode ? "Explain this form" : "Take a tour"}</span>
       </button>
+      <dialog
+        ref={chooser}
+        className="tour-choice"
+        aria-labelledby="tour-choice-title"
+        aria-describedby="tour-choice-description"
+        onCancel={() => {
+          try {
+            localStorage.setItem(storageKey, "seen");
+          } catch {
+            /* Storage is optional. */
+          }
+        }}
+      >
+        <div className="tour-meta">
+          <span>EXPLORE AT YOUR PACE</span>
+          <button
+            type="button"
+            aria-label="Close tour options"
+            onClick={() => {
+              chooser.current?.close();
+              try {
+                localStorage.setItem(storageKey, "seen");
+              } catch {
+                /* Storage is optional. */
+              }
+            }}
+          >
+            ×
+          </button>
+        </div>
+        <h2 id="tour-choice-title">What would you like to explore?</h2>
+        <p id="tour-choice-description">
+          Choose a quick guide for this page or a walkthrough of your workspace.
+        </p>
+        <button
+          type="button"
+          className="tour-choice-option"
+          onClick={() => begin("page")}
+        >
+          <span aria-hidden="true">◉</span>
+          <span>
+            <strong>This page</strong>
+            <small>
+              {accountMode
+                ? "Explain this account form"
+                : `Explain ${navigation.find((item) => item.id === (location.hash.slice(1) || "overview"))?.label || "this page"} and its available form fields. Stay right here.`}
+            </small>
+          </span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <button
+          type="button"
+          className="tour-choice-option"
+          onClick={() => begin("all")}
+        >
+          <span aria-hidden="true">◫</span>
+          <span>
+            <strong>Entire workspace</strong>
+            <small>
+              Visit every page available to your role, including forms and
+              examples.
+            </small>
+          </span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <p className="tour-choice-note">
+          You can stop at any time. Tours never submit forms.
+        </p>
+      </dialog>
       <dialog
         ref={dialog}
         className="tour-dialog tour-v2"
