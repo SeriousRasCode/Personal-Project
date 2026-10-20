@@ -29,6 +29,7 @@ import {
   ListReadingsQueryDto,
   ListSensorsQueryDto,
   PressureStatsQueryDto,
+  PressureMapQueryDto,
   RebuildAggregatesDto,
   RecordReadingDto,
   UpdateSensorDto,
@@ -48,6 +49,18 @@ import { TelemetryService } from './telemetry.service.js';
 @Roles(UserRole.ADMIN, UserRole.DISPATCHER, UserRole.FIELD_TECHNICIAN)
 export class TelemetryController {
   constructor(private readonly telemetryService: TelemetryService) {}
+
+  @Get('pressure-map')
+  @ApiOperation({
+    summary:
+      'Latest geolocated pressure observation per sensor, including freshness',
+  })
+  pressureMap(
+    @Query() query: PressureMapQueryDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.telemetryService.pressureMap(query, actor);
+  }
 
   @Get('sensors')
   @ApiOperation({ summary: 'List Telemetry Sensors' })
