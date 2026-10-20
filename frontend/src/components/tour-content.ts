@@ -156,6 +156,8 @@ export function describeField(
 }
 
 export const pageHelp: Record<string, string> = {
+  leaks:
+    "Filter clustered incidents by severity and status. Select an incident to inspect its location and report evidence. Dispatchers can record triage decisions and create linked maintenance work orders; field technicians have read-only investigation access.",
   overview:
     "Your starting point: inspect the network summary, then use a quick action to find water points or share an observation.",
   "water-points":
@@ -163,13 +165,13 @@ export const pageHelp: Record<string, string> = {
   reports:
     "Share a water-flow observation, a queue estimate, or a suspected leak. We will walk through each report type and its fields.",
   operations:
-    "Review work orders available to your account. Dispatchers coordinate repairs; technicians and operators review their assigned work.",
+    "Filter the repair queue and select an order to inspect its history. Dispatchers create and assign repairs; technicians and operators update their own assigned work. Completing a repair requires a resolution note.",
   telemetry:
-    "Review sensors and enter manual pressure readings. The following steps explain each input in the reading form.",
+    "Inspect the geographic pressure layer or choose an area for crowdsourced flow and queue consensus. Select a location for pressure history. Gray observations are stale or unavailable. Measured bar values and inferred flow are separate layers. You can also record a manual reading below.",
   maintenance:
     "Review valve positions. Opening or closing a valve is a real operational action; the tour never triggers these buttons.",
   schedules:
-    "Review the water rotation schedule and available lifecycle actions. Publishing, activating or cancelling a schedule changes the service plan.",
+    "Filter the rotation agenda by service date. Select a rotation to inspect each window. Dispatchers create and edit multi-window drafts, publish and activate plans, and record operations during valid windows. Active plans are reconciled automatically by the schedule clock.",
   geography:
     "Review service areas and the form used to create a record. Use identifiers from your actual local records.",
   users:
