@@ -29,6 +29,12 @@ import { CoordinateDto } from '../../geography/dto/common.dto.js';
 const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
+export class PressureMapQueryDto {
+  @IsOptional()
+  @IsUUID()
+  kebeleId?: string;
+}
+
 export class ListSensorsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
