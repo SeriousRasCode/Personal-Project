@@ -22,6 +22,8 @@ import {
   UssdSessions,
 } from "./features/admin-panels";
 import "./App.css";
+import { ThemeToggle } from "./components/ThemeToggle";
+import "./theme.css";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession());
@@ -169,6 +171,7 @@ export default function App() {
             </strong>
           </div>
           <div className="topbar-actions">
+            <ThemeToggle />
             <span className="location-label">⌖ Jimma, Ethiopia</span>
             {session ? (
               <>
