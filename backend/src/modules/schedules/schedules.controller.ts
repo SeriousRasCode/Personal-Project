@@ -61,6 +61,18 @@ export class SchedulesController {
     return this.schedulesService.list(query, { publicOnly: true });
   }
 
+  @Get('staff')
+  @Roles(UserRole.DISPATCHER, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'List staff schedules, including drafts and version tokens',
+  })
+  listStaff(
+    @Query() query: ListRotationSchedulesDto,
+    @Req() request: ScheduleRequest,
+  ) {
+    return this.schedulesService.list(query, request);
+  }
+
   @Get(':id')
   @Public()
   @ApiOperation({ summary: 'Get a rotation schedule and its windows' })
