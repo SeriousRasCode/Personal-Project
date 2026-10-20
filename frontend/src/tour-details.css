@@ -1,0 +1,346 @@
+/* Leave the actual target visible through the transparent modal. The shade is
+   cast outside its boundary instead of dimming the target itself. */
+.tour-v2::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+.tour-v2 .tour-spotlight {
+  background: transparent;
+  border: 2px solid #84cfaa;
+  box-shadow:
+    0 0 0 9999px #091c25bd,
+    0 0 0 5px #9ce1bb40;
+  transition:
+    top 0.2s,
+    left 0.2s,
+    width 0.2s,
+    height 0.2s;
+  z-index: 0;
+}
+.tour-shade {
+  position: fixed;
+  inset: 0;
+  background: #091c25bd;
+}
+.tour-v2 .tour-card {
+  z-index: 3;
+  width: min(370px, calc(100vw - 28px));
+  padding: 22px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+.tour-v2 .tour-copy h2 {
+  font-size: 22px;
+  margin: 15px 0 10px;
+}
+.tour-v2 .tour-copy p {
+  min-height: 0;
+  font-size: 12px;
+  line-height: 1.75;
+  margin: 0;
+}
+.tour-v2 .tour-meta > span {
+  font-size: 8px;
+}
+.tour-v2 .tour-count {
+  margin-top: 18px;
+}
+.tour-v2 .tour-actions {
+  margin-top: 15px;
+}
+.tour-field-demo {
+  position: fixed;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 12px;
+  background: #f3fff7;
+  color: #214f3b;
+  border: 2px solid #4caa7c;
+  border-radius: 9px;
+  font-size: 13px;
+  pointer-events: none;
+  overflow: hidden;
+  max-height: 130px;
+}
+.tour-field-demo > span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.tour-field-demo small {
+  font-size: 9px;
+  font-weight: 650;
+  color: #356a50;
+}
+.tour-field-demo i {
+  display: inline-block;
+  height: 14px;
+  width: 1px;
+  margin-left: 2px;
+  background: currentColor;
+  animation: demo-cursor 1s steps(2) infinite;
+}
+.tour-example {
+  padding: 12px;
+  border-radius: 9px;
+  background: #edf6f0;
+  margin-top: 15px;
+  border: 1px solid #c8dfd0;
+}
+.tour-example > span {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: #456c56;
+}
+.tour-example code {
+  display: block;
+  min-height: 25px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  color: #224e38;
+  padding: 7px 0;
+}
+.tour-example small {
+  display: block;
+  font-size: 9px;
+  color: #4e725b;
+}
+[data-theme="dark"] .tour-field-demo {
+  background: #1c4035;
+  color: #e1ffe9;
+  border-color: #90d6b0;
+}
+[data-theme="dark"] .tour-field-demo small {
+  color: #b5e6ca;
+}
+[data-theme="dark"] .tour-example {
+  background: #233e34;
+  border-color: #48705a;
+}
+[data-theme="dark"] .tour-example > span,
+[data-theme="dark"] .tour-example small {
+  color: #b7d9c3;
+}
+[data-theme="dark"] .tour-example code {
+  color: #ddf8e6;
+}
+@keyframes demo-cursor {
+  50% {
+    opacity: 0;
+  }
+}
+/* Account forms fit ordinary laptop heights; small screens still scroll naturally. */
+.route-content:has(.metrics) {
+  padding-top: 25px;
+  padding-bottom: 22px;
+}
+.route-content:has(.metrics) .page-heading {
+  margin-bottom: 22px;
+}
+.route-content:has(.metrics) .water-ring {
+  width: 140px;
+  height: 140px;
+}
+.route-content:has(.metrics) .water-ring span {
+  width: 80px;
+  height: 95px;
+  font-size: 72px;
+}
+.account-header {
+  padding: 15px 4vw;
+}
+.account-main {
+  padding: 8px 4vw 12px;
+  gap: 5vw;
+}
+.account-story {
+  min-height: 450px;
+  padding: 28px;
+}
+.account-water {
+  width: 170px;
+  height: 170px;
+  margin: 20px 0;
+}
+.account-water > span {
+  width: 90px;
+  height: 105px;
+  font-size: 80px;
+}
+.account-story h1 {
+  font-size: clamp(28px, 3vw, 38px);
+  margin: 8px 0 14px;
+}
+.story-features {
+  margin-top: 22px;
+}
+.account-form-area {
+  padding: 12px 0;
+}
+.account-card h2 {
+  font-size: 27px;
+  margin: 9px 0;
+}
+.account-subtitle {
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+.account-tabs {
+  margin-bottom: 17px;
+  padding: 4px;
+}
+.account-tabs button {
+  min-height: 36px;
+}
+.account-form {
+  gap: 12px;
+}
+.account-form input {
+  height: 44px;
+  min-height: 44px;
+}
+.account-form label {
+  gap: 5px;
+}
+.account-form .account-submit {
+  min-height: 44px;
+  margin-top: 3px;
+}
+.account-note {
+  padding-top: 13px;
+  margin-top: 15px;
+  line-height: 1.5;
+}
+.account-footer {
+  padding: 10px;
+}
+.account-story > p {
+  font-size: 12px;
+}
+.account-header > div {
+  gap: 12px;
+}
+.route-content:has(.metrics) .welcome-banner {
+  min-height: 235px;
+  padding-block: 27px;
+}
+.route-content:has(.metrics) .metrics article {
+  min-height: 135px;
+  padding-block: 18px;
+}
+.dashboard-columns .empty-state {
+  padding: 15px 0;
+}
+@media (max-height: 760px) and (min-width: 801px) {
+  .account-water {
+    height: 135px;
+    width: 135px;
+    margin: 12px 0;
+  }
+  .account-story {
+    min-height: 420px;
+  }
+  .account-story h1 {
+    font-size: 31px;
+  }
+  .story-features {
+    margin-top: 17px;
+  }
+  .account-main {
+    align-items: center;
+  }
+  .account-card > .eyebrow {
+    margin-top: 0;
+  }
+}
+@media (max-width: 800px) {
+  .account-main {
+    padding: 0 20px 8px;
+    min-height: 0;
+    flex: 1;
+    width: 100%;
+  }
+  .account-form-area {
+    padding: 12px 0;
+  }
+  .account-header {
+    padding: 12px 18px;
+  }
+  .account-header .account-back {
+    display: none;
+  }
+  .account-card {
+    max-width: 410px;
+  }
+  .account-card h2 {
+    font-size: 25px;
+  }
+  .account-header .tour-launch {
+    font-size: 10px;
+  }
+  .account-header .tour-launch > span:last-child {
+    display: inline;
+  }
+  .account-header .theme-toggle-label {
+    display: none;
+  }
+  .account-page {
+    min-height: 100dvh;
+  }
+}
+@media (max-width: 680px) {
+  body.tour-running {
+    padding-bottom: 65vh;
+  }
+  .tour-v2 .tour-card {
+    max-height: calc(100dvh - 32px);
+  }
+  .tour-v2 .tour-copy h2 {
+    font-size: 19px;
+  }
+  .tour-v2 .tour-card {
+    padding: 17px;
+  }
+  .tour-v2 .tour-copy p {
+    font-size: 11px;
+  }
+  .tour-v2 .tour-example {
+    margin-top: 10px;
+    padding: 9px;
+  }
+  .tour-v2 .tour-count {
+    margin-top: 10px;
+  }
+  .account-header .brand small {
+    display: none;
+  }
+  .account-header .brand strong {
+    font-size: 16px;
+  }
+  .account-header .brand-logo {
+    height: 34px;
+    width: 32px;
+    font-size: 25px;
+  }
+  .account-header > div {
+    gap: 5px;
+  }
+  .account-header .tour-launch {
+    padding: 5px;
+  }
+  .account-header .tour-launch > span:first-child {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
