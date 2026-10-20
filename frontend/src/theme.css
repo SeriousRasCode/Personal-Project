@@ -13,6 +13,32 @@
   font-size: 11px;
   font-weight: 600;
 }
+/* Explicit secondary text colors prevent light-theme utility styles leaking into dark surfaces. */
+[data-theme="dark"] .page-heading p:not(.eyebrow),
+[data-theme="dark"] .brand small,
+[data-theme="dark"] .workspace-label small,
+[data-theme="dark"] .sidebar-bottom small,
+[data-theme="dark"] .topbar-actions .location-label,
+[data-theme="dark"] .breadcrumb > span,
+[data-theme="dark"] .empty-state,
+[data-theme="dark"] .app-footer,
+[data-theme="dark"] .next-steps > a > span,
+[data-theme="dark"] .row-arrow {
+  color: #b3c5c3;
+}
+[data-theme="dark"] .section-heading > a,
+[data-theme="dark"] .inbox-button {
+  color: #a5dec8;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #a3b8bc;
+  opacity: 1;
+}
+[data-theme="dark"] .info-card h2,
+[data-theme="dark"] h3 {
+  color: #e1ece9;
+}
 .theme-toggle > span:first-child {
   font-size: 20px;
   line-height: 1;
