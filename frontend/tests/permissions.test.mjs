@@ -25,6 +25,7 @@ const fieldPages = [
   "telemetry",
   "maintenance",
   "geography",
+  "leaks",
 ];
 const expected = {
   ADMIN: Object.keys(pagePermissions),
@@ -45,6 +46,11 @@ for (const [role, pages] of Object.entries(expected)) {
     }
   });
   test(`${role}: mutation permissions`, () => {
+    for (const action of ["work-order.manage", "leak.triage", "sensor.manage"])
+      assert.equal(
+        canPerform(action, session(role)),
+        ["ADMIN", "DISPATCHER"].includes(role),
+      );
     assert.equal(canPerform("area.manage", session(role)), role === "ADMIN");
     assert.equal(
       canPerform("schedule.manage", session(role)),
