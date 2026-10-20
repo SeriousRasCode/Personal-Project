@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test tests/permissions.test.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "dev": "vite",
     "dev:frontend": "vite",
     "build": "tsc -b && vite build",
