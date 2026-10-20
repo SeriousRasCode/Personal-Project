@@ -25,6 +25,22 @@ npm run start:dev
 The seeded admin credentials come from `SEED_ADMIN_PHONE` and `SEED_ADMIN_PASSWORD` in `.env`.
 Sign in with `POST /api/v1/auth/login` to get an access token.
 
+For a populated local demo, run `npm run db:seed:demo` after the base seed. It is
+blocked in production and can be rerun without duplicating its sample rows. It
+adds five public water points with flow and queue observations, two active leak
+areas, an assigned work order, and these active test users. Their password is
+`SEED_DEMO_PASSWORD` or `HydroDemo!2026` when that variable is unset:
+
+| Role | Phone |
+| --- | --- |
+| Dispatcher | `+251900000101` |
+| Field technician | `+251900000102` |
+| Standpipe operator | `+251900000103` |
+| Citizen | `+251900000104` |
+
+The administrator remains `SEED_ADMIN_PHONE` with `SEED_ADMIN_PASSWORD`; the
+demo seed does not replace that password.
+
 `npm run infra:reset` tears the volumes down and forces a clean database, Redis, and
 LocalStack state on the next `infra:up`.
 
