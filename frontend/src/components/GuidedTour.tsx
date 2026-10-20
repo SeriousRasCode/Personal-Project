@@ -176,6 +176,12 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
           discovered.current.add(active.id);
           const additions: Step[] = fields.map((field, fieldIndex) => {
             const label = (
+              field
+                .getAttribute("aria-labelledby")
+                ?.split(/\s+/)
+                .map((id) => document.getElementById(id)?.textContent?.trim())
+                .filter(Boolean)
+                .join(" ") ||
               field.labels?.[0]?.childNodes[0]?.textContent ||
               field.getAttribute("aria-label") ||
               field.name ||
