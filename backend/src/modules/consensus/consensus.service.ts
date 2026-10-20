@@ -20,6 +20,7 @@ import {
   type QueueObservation,
 } from './queue-trend.js';
 import { calculateTapConsensus, type TapObservation } from './tap-consensus.js';
+import { spatialWeight, SPATIAL_RADIUS_METERS } from './spatial-weight.js';
 
 const HOUR_MS = 3_600_000;
 const MINUTE_MS = 60_000;
@@ -124,20 +125,26 @@ export class ConsensusService {
     const rows = await queryRows<RawRow>(
       this.prisma,
       Prisma.sql`
-        SELECT status, reliability_weight, observed_at
-        FROM tap_status_reports
-        WHERE standpipe_id = ${standpipeId}
-          AND observed_at >= ${windowStart}
-        ORDER BY observed_at DESC
+        SELECT r.status, r.reliability_weight, r.observed_at,
+          (r.standpipe_id = ${standpipeId}::uuid) AS direct,
+          ST_Distance(source.location::geography, target.location::geography) AS distance
+        FROM tap_status_reports r
+        JOIN standpipes source ON source.id = r.standpipe_id
+        JOIN standpipes target ON target.id = ${standpipeId}::uuid
+        WHERE source.kebele_id = target.kebele_id AND source.is_active = TRUE
+          AND (source.id = target.id OR ST_DWithin(source.location::geography, target.location::geography, ${SPATIAL_RADIUS_METERS}))
+          AND r.observed_at >= ${windowStart}
+        ORDER BY r.observed_at DESC
       `,
     );
 
     return rows.map((row) => ({
       status: toStringValue(rowValue(row, 'status'), 'status') as FlowStatus,
-      reliabilityWeight: toNumber(
-        rowValue(row, 'reliability_weight'),
-        'reliabilityWeight',
-      ),
+      reliabilityWeight:
+        spatialWeight(
+          toNullableNumber(row['distance']) ?? 0,
+          row['direct'] !== false,
+        ) * toNumber(rowValue(row, 'reliability_weight'), 'reliabilityWeight'),
       observedAt: toDate(rowValue(row, 'observed_at'), 'observedAt'),
     }));
   }
@@ -208,6 +215,26 @@ export class ConsensusService {
         'lastCalculatedAt',
       ),
     };
+  }
+
+  async recalculateNeighbors(
+    standpipeId: string,
+    now = new Date(),
+  ): Promise<void> {
+    const neighbors = await queryRows<RawRow>(
+      this.prisma,
+      Prisma.sql`
+      SELECT other.id FROM standpipes target JOIN standpipes other
+        ON other.kebele_id = target.kebele_id AND other.is_active = TRUE
+      WHERE target.id = ${standpipeId}::uuid AND other.id <> target.id
+        AND ST_DWithin(other.location::geography, target.location::geography, ${SPATIAL_RADIUS_METERS})
+    `,
+    );
+    for (const neighbor of neighbors)
+      await this.recalculateTapConsensus(
+        toStringValue(neighbor['id'], 'id'),
+        now,
+      );
   }
 
   async recalculateTapConsensus(
