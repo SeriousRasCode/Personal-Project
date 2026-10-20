@@ -45,6 +45,7 @@ import {
   ListReadingsQueryDto,
   ListSensorsQueryDto,
   PressureStatsQueryDto,
+  PressureMapQueryDto,
   RebuildAggregatesDto,
   RecordReadingDto,
   UpdateSensorDto,
@@ -448,6 +449,47 @@ export class TelemetryService {
       sampleCount: toNumber(rowValue(row, 'sampleCount'), 'sampleCount'),
       cellLongitude: toNullableNumber(rowValue(row, 'cellLongitude')),
       cellLatitude: toNullableNumber(rowValue(row, 'cellLatitude')),
+    };
+  }
+
+  async pressureMap(query: PressureMapQueryDto, actor: AuthenticatedUser) {
+    this.assertRole(actor, READ_ROLES, 'You cannot view pressure monitoring');
+    const now = new Date();
+    const rows = await queryRows<RawRow>(
+      this.prisma,
+      Prisma.sql`
+      SELECT s.id, s.name, s.status, s.standpipe_id AS "standpipeId", p.kebele_id AS "kebeleId",
+        ST_X(COALESCE(r.location, s.location, p.location)) AS longitude,
+        ST_Y(COALESCE(r.location, s.location, p.location)) AS latitude,
+        r.pressure_bar AS pressure, r.observed_at AS "observedAt", r.source
+      FROM telemetry_sensors s
+      LEFT JOIN standpipes p ON p.id = s.standpipe_id
+      LEFT JOIN LATERAL (
+        SELECT pressure_bar, observed_at, source, location FROM pressure_readings
+        WHERE sensor_id = s.id AND observed_at <= ${now}
+        ORDER BY observed_at DESC, received_at DESC LIMIT 1
+      ) r ON TRUE
+      WHERE s.status <> 'RETIRED'::"SensorStatus"
+        ${query.kebeleId ? Prisma.sql`AND p.kebele_id = ${query.kebeleId}::uuid` : Prisma.empty}
+      ORDER BY s.name, s.id
+    `,
+    );
+    return {
+      sampledAt: now.toISOString(),
+      items: rows.map((row) => ({
+        id: toStringValue(row['id'], 'id'),
+        name: toStringValue(row['name'], 'name'),
+        status: toStringValue(row['status'], 'status'),
+        standpipeId: nullableString(row['standpipeId']),
+        kebeleId: nullableString(row['kebeleId']),
+        longitude: toNullableNumber(row['longitude']),
+        latitude: toNullableNumber(row['latitude']),
+        pressure: toNullableNumber(row['pressure']),
+        observedAt:
+          toNullableDate(row['observedAt'], 'observedAt')?.toISOString() ??
+          null,
+        source: nullableString(row['source']),
+      })),
     };
   }
 
