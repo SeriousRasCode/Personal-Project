@@ -85,8 +85,9 @@ export class WorkOrdersController {
   getWorkOrder(
     @Param('workOrderId', new ParseUUIDPipe({ version: '4' }))
     workOrderId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.workOrdersService.findWorkOrder(workOrderId);
+    return this.workOrdersService.findWorkOrder(workOrderId, user);
   }
 
   @Get(':workOrderId/activities')
@@ -97,8 +98,9 @@ export class WorkOrdersController {
     @Param('workOrderId', new ParseUUIDPipe({ version: '4' }))
     workOrderId: string,
     @Query() query: ListWorkOrderActivitiesQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.workOrdersService.listActivities(workOrderId, query);
+    return this.workOrdersService.listActivities(workOrderId, query, user);
   }
 
   @Patch(':workOrderId')
