@@ -5,12 +5,16 @@ export const NOTIFICATION_TEMPLATES = {
   leakStatusChanged: 'leak.status_changed',
   workOrderCreated: 'work_order.created',
   workOrderStatusChanged: 'work_order.status_changed',
+  waterOpened: 'rotation_window.opened',
+  waterClosed: 'rotation_window.closed',
 } as const;
 
 export type NotificationTemplate =
   (typeof NOTIFICATION_TEMPLATES)[keyof typeof NOTIFICATION_TEMPLATES];
 
 export interface NotificationAudience {
+  kebeleId?: string;
+  standpipeId?: string;
   roles?: UserRole[];
   userIds?: string[];
 }
@@ -62,6 +66,29 @@ export function resolveNotificationPlan(
   event: OutboxEventLike,
 ): NotificationPlan | null {
   const { payload } = event;
+
+  if (
+    event.eventType === NOTIFICATION_TEMPLATES.waterOpened ||
+    event.eventType === NOTIFICATION_TEMPLATES.waterClosed
+  ) {
+    const kebeleId = text(payload, 'kebeleId', '');
+    if (!kebeleId) return null;
+    const opened = event.eventType === NOTIFICATION_TEMPLATES.waterOpened;
+    return {
+      template: opened
+        ? NOTIFICATION_TEMPLATES.waterOpened
+        : NOTIFICATION_TEMPLATES.waterClosed,
+      audience: {
+        kebeleId,
+        standpipeId: text(payload, 'standpipeId', '') || undefined,
+      },
+      excludeUserIds: [],
+      title: opened ? 'Water service is open' : 'Water service has closed',
+      body: opened
+        ? `Your area’s water service window is open until ${text(payload, 'endsAt', 'the scheduled closing time')}. Check your taps and avoid leaving them unattended.`
+        : 'Your area’s water service window has closed. Please close unattended taps.',
+    };
+  }
 
   if (event.eventType === NOTIFICATION_TEMPLATES.leakReported) {
     const severity = text(payload, 'severity', 'UNKNOWN');
