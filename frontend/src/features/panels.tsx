@@ -54,27 +54,6 @@ export function Resource({
     </section>
   );
 }
-export function WorkOrders() {
-  const data = useRows("/work-orders?limit=100&page=1");
-  return (
-    <section className="panel">
-      <h1>Work orders</h1>
-      {data.error && (
-        <p className="alert" role="alert">
-          {data.error}
-        </p>
-      )}
-      <DataTable
-        rows={data.rows}
-        columns={[
-          ["title", "Title"],
-          ["priority", "Priority"],
-          ["status", "Status"],
-        ]}
-      />
-    </section>
-  );
-}
 export function Notifications() {
   const data = useRows("/notifications?limit=100"),
     [error, setError] = useState(""),
