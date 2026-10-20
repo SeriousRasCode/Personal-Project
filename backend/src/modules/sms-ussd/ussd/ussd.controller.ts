@@ -34,6 +34,7 @@ import {
   verifyCallback,
 } from './ussd-signature.js';
 import { UssdService } from './ussd.service.js';
+import { SmsService } from '../sms/sms.service.js';
 
 @ApiTags('ussd')
 @Controller('ussd')
@@ -41,6 +42,7 @@ export class UssdController {
   constructor(
     private readonly ussdService: UssdService,
     private readonly configService: ConfigService,
+    private readonly smsService: SmsService,
   ) {}
 
   @Post('callback')
@@ -79,6 +81,21 @@ export class UssdController {
     return this.ussdService.handleCallback(dto);
   }
 
+  @Get('gateway-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.DISPATCHER)
+  gatewayStatus() {
+    return {
+      smsProvider: this.smsService.providerName,
+      smsConfigured: this.smsService.providerName === 'http',
+      ussdSignatureConfigured: Boolean(
+        this.configService.get<string>('ussdCallbackSecret') ||
+        this.configService.get<string>('USSD_CALLBACK_SECRET'),
+      ),
+      carrierDeliveryVerified: false,
+    };
+  }
+
   @Get('sessions')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -92,6 +109,8 @@ export class UssdController {
   }
 
   private rawBody(request: FastifyRequest): string {
+    const captured = (request as FastifyRequest & { rawBody?: Buffer }).rawBody;
+    if (captured) return captured.toString('utf8');
     const raw = (request as { body?: unknown }).body;
     if (typeof raw === 'string') {
       return raw;
