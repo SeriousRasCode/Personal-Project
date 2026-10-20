@@ -5,22 +5,14 @@ import { Reports } from "./features/reports";
 import { GeographyAdmin } from "./features/geography";
 import { Dashboard } from "./features/dashboard";
 import { navigation, roleLabels } from "./components/navigation";
-import {
-  Notifications,
-  Resource,
-  Schedules,
-  Telemetry,
-  UserAdministration,
-  ValveControls,
-  WorkOrders,
-} from "./features/panels";
+import { Notifications, Resource, WorkOrders } from "./features/panels";
 import { Preferences } from "./features/preferences";
-import {
-  AuditLog,
-  OutboxMonitor,
-  StorageAdmin,
-  UssdSessions,
-} from "./features/admin-panels";
+import { AuditLog, OutboxMonitor, UssdSessions } from "./features/admin-panels";
+import { Telemetry } from "./features/telemetry";
+import { Schedules } from "./features/schedules";
+import { UserAdministration } from "./features/users";
+import { ValveControls } from "./features/valves";
+import { StorageAdmin } from "./features/storage";
 import "./App.css";
 import { ThemeToggle } from "./components/ThemeToggle";
 import "./theme.css";
