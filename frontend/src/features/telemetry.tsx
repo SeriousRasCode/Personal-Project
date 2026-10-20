@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { api } from "../lib/api";
+import { api, getSession } from "../lib/api";
+import { canPerform } from "../lib/permissions";
+import { MonitoringPointForm } from "../components/monitoring-point-form";
 import {
   FormActions,
   FormFeedback,
@@ -9,21 +11,24 @@ import {
   RecordPicker,
 } from "../components/forms";
 import { Resource } from "./panels";
+import { NetworkMonitor } from "./network-monitor";
 
 export function Telemetry() {
+  const [revision, setRevision] = useState(0),
+    [monitorRevision, setMonitorRevision] = useState(0);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   return (
     <FormLayout
       eyebrow="OPERATIONS / PRESSURE MONITORING"
-      title="Record a pressure reading"
-      description="Choose a sensor and enter the measurement you took. The observation time is recorded automatically."
+      title="Pressure & flow monitoring"
+      description="Inspect recent observations and crowd consensus, then record field measurements when needed."
       help={
         <>
           <p>
-            Choose a sensor by name. Enter pressure in <strong>bar</strong>,
-            exactly as shown on your measuring device.
+            Choose a monitoring point by name. Enter pressure in{" "}
+            <strong>bar</strong>, exactly as shown on your measuring device.
           </p>
           <p>
             Flow is optional. Leave it blank if you only measured pressure; zero
@@ -32,6 +37,12 @@ export function Telemetry() {
         </>
       }
     >
+      <NetworkMonitor key={String(revision) + ":" + String(monitorRevision)} />
+      {canPerform("sensor.manage", getSession()) && (
+        <MonitoringPointForm
+          onCreated={() => setRevision((value) => value + 1)}
+        />
+      )}
       <form
         className="workflow-form"
         aria-busy={busy}
@@ -65,6 +76,7 @@ export function Telemetry() {
             setMessage(
               "Reading recorded. Your measurement is now part of the sensor history.",
             );
+            setMonitorRevision((value) => value + 1);
           } catch (failure) {
             setError((failure as Error).message);
           } finally {
@@ -72,10 +84,11 @@ export function Telemetry() {
           }
         }}
       >
-        <FormSection number="01" title="Choose your sensor">
+        <FormSection number="01" title="Choose your monitoring point">
           <RecordPicker
+            key={revision}
             endpoint="/telemetry/sensors"
-            label="Sensor"
+            label="Monitoring point"
             name="sensorId"
             disabled={busy}
           />
@@ -119,6 +132,7 @@ export function Telemetry() {
       </form>
       <div className="workflow-records">
         <Resource
+          key={revision}
           heading="Registered sensors"
           endpoint="/telemetry/sensors?limit=100&page=1"
           columns={[
