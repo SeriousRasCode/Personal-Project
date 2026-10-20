@@ -18,7 +18,11 @@ export class AuditController {
   @Get('events')
   async list(@Query() query: PaginationQueryDto) {
     const [items, total] = await Promise.all([
-      this.prisma.auditEvent.findMany({ orderBy: { createdAt: 'desc' }, skip: query.skip, take: query.take }),
+      this.prisma.auditEvent.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: query.skip,
+        take: query.take,
+      }),
       this.prisma.auditEvent.count(),
     ]);
     return { items, total, page: query.page, limit: query.limit };
