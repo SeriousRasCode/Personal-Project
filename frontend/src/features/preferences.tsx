@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import "./preferences.css";
+import { WaterAlertArea } from "../components/water-alert-area";
 
 type Channel = "IN_APP" | "PUSH" | "SMS" | "USSD";
 type Preference = { channel: Channel; enabled: boolean };
@@ -52,10 +53,27 @@ export function Preferences() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [smsAvailable, setSmsAvailable] = useState(false);
+  const deliveryChannels = channels.map((channel) =>
+    channel.id === "SMS"
+      ? {
+          ...channel,
+          available: smsAvailable,
+          description: smsAvailable
+            ? "Receive water-opening and closing alerts by text message. Carrier delivery depends on the configured provider."
+            : "SMS delivery is not configured. Water alerts can still appear in your inbox.",
+        }
+      : channel,
+  );
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
+    api<{ smsAvailable: boolean }>("/notifications/capabilities")
+      .then((result) => {
+        if (active) setSmsAvailable(result.smsAvailable);
+      })
+      .catch(() => {});
     api<Preference[]>("/notifications/preferences")
       .then((result) => {
         if (active) setPreferences(result);
@@ -106,6 +124,7 @@ export function Preferences() {
           <span aria-hidden="true">✓</span> Changes save automatically
         </span>
       </div>
+      <WaterAlertArea />
       <div className="preferences-layout">
         <section
           className="panel preferences-card"
@@ -128,7 +147,7 @@ export function Preferences() {
             </div>
           ) : (
             <div className="preferences-channel-list">
-              {channels.map((channel) => {
+              {deliveryChannels.map((channel) => {
                 const preference = preferences.find(
                   (row) => row.channel === channel.id,
                 );
@@ -163,8 +182,10 @@ export function Preferences() {
                           {saving === channel.id
                             ? "Saving your preference…"
                             : enabled
-                              ? "On · delivered to your inbox"
-                              : "Off · in-app updates paused"}
+                              ? channel.id === "SMS"
+                                ? "On · water alerts by text message"
+                                : "On · delivered to your inbox"
+                              : "Off · updates paused for this channel"}
                         </small>
                       )}
                     </div>
