@@ -73,6 +73,15 @@ export class SchedulesController {
     return this.schedulesService.list(query, request);
   }
 
+  @Get('staff/:id')
+  @Roles(UserRole.DISPATCHER, UserRole.ADMIN)
+  getStaff(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Req() request: ScheduleRequest,
+  ) {
+    return this.schedulesService.getById(id, request);
+  }
+
   @Get(':id')
   @Public()
   @ApiOperation({ summary: 'Get a rotation schedule and its windows' })
