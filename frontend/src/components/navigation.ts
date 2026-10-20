@@ -13,6 +13,7 @@ export const navigation = [
     icon: "☷",
     group: "Operations",
   },
+  { id: "leaks", label: "Leak investigation", icon: "◈", group: "Operations" },
   {
     id: "telemetry",
     label: "Pressure monitoring",
