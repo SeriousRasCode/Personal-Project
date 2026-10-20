@@ -28,13 +28,13 @@ const helpers: Record<string, FieldHelp> = {
   },
   standpipeId: {
     description:
-      "Identify the water point this observation belongs to. Copy the real ID from your records; the example ID will not refer to a real water point.",
-    example: "00000000-0000-4000-8000-000000000001",
+      "Choose the water point by name. If a search box is shown, filter the options by name or code. The record ID is handled automatically.",
+    example: "Central market water point · JIM-01",
   },
   sensorId: {
     description:
-      "Connect this pressure reading to the correct sensor. Use an actual registered sensor ID, not the demonstration ID.",
-    example: "00000000-0000-4000-8000-000000000002",
+      "Choose the sensor by name to connect the reading to the correct device. You do not need to enter its ID.",
+    example: "Central market pressure sensor",
   },
   regionId: {
     description:
@@ -43,8 +43,8 @@ const helpers: Record<string, FieldHelp> = {
   },
   kebeleId: {
     description:
-      "Select the service area this schedule belongs to using its actual record ID.",
-    example: "00000000-0000-4000-8000-000000000004",
+      "Choose the kebele or service area by its name. The schedule will be associated with that selected record automatically.",
+    example: "Hermata · JIM-04",
   },
   pressureBar: {
     description:
@@ -129,7 +129,15 @@ export function describeField(
   if (field.autocomplete === "one-time-code")
     return helpers["verification code"];
   const known = helpers[field.name] || helpers[label.toLowerCase()];
-  if (known) return known;
+  if (known)
+    return field instanceof HTMLSelectElement
+      ? {
+          ...known,
+          example:
+            [...field.options].find((option) => option.value)?.text ||
+            known.example,
+        }
+      : known;
   if (field instanceof HTMLSelectElement)
     return {
       description: `Choose the ${label.toLowerCase()} appropriate to this record. Changes to account access or preferences take effect only through the page controls, never from this tour.`,
