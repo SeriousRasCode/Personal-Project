@@ -15,6 +15,7 @@ async function bootstrap(): Promise<void> {
       trustProxy: toBoolean(process.env.TRUST_PROXY, false),
       bodyLimit: 1_048_576,
     }),
+    { rawBody: true },
   );
 
   await configureApp(app);
