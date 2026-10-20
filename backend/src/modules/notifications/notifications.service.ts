@@ -68,8 +68,10 @@ export class NotificationsService {
   private async resolveRecipients(
     userIds: string[],
     roles: string[],
+    kebeleId?: string,
+    standpipeId?: string,
   ): Promise<string[]> {
-    if (userIds.length === 0 && roles.length === 0) {
+    if (userIds.length === 0 && roles.length === 0 && !kebeleId) {
       return [];
     }
 
@@ -77,6 +79,23 @@ export class NotificationsService {
       where: {
         status: UserStatus.ACTIVE,
         OR: [
+          ...(kebeleId
+            ? [
+                { citizenProfile: { is: { kebeleId } } },
+                {
+                  operatorProfile: {
+                    is: {
+                      isActive: true,
+                      standpipes: {
+                        some: standpipeId
+                          ? { id: standpipeId, isActive: true }
+                          : { kebeleId, isActive: true },
+                      },
+                    },
+                  },
+                },
+              ]
+            : []),
           ...(userIds.length > 0 ? [{ id: { in: userIds } }] : []),
           ...(roles.length > 0 ? [{ role: { in: roles as never } }] : []),
         ],
@@ -186,6 +205,8 @@ export class NotificationsService {
     const recipients = await this.resolveRecipients(
       audience.userIds,
       audience.roles,
+      plan.audience.kebeleId,
+      plan.audience.standpipeId,
     );
     if (recipients.length === 0) {
       return 0;
@@ -195,6 +216,12 @@ export class NotificationsService {
     let created = 0;
 
     for (const userId of recipients) {
+      if (
+        plan.template === 'rotation_window.opened' ||
+        plan.template === 'rotation_window.closed'
+      ) {
+        if (await this.deliverAlertSms(event, plan, userId, now)) created += 1;
+      }
       if (!optedIn.has(userId)) {
         continue;
       }
@@ -283,7 +310,8 @@ export class NotificationsService {
 
     return Object.values(NotificationChannel).map((channel) => ({
       channel,
-      enabled: configured.get(channel) ?? true,
+      enabled:
+        configured.get(channel) ?? channel === NotificationChannel.IN_APP,
     }));
   }
 
@@ -291,7 +319,11 @@ export class NotificationsService {
     userId: string,
     input: UpdateNotificationPreferenceDto,
   ): Promise<NotificationPreferenceResponseDto> {
-    if (input.channel === NotificationChannel.SMS) {
+    if (
+      input.channel === NotificationChannel.SMS &&
+      input.enabled &&
+      this.smsService.providerName !== 'http'
+    ) {
       throw new BadRequestException(
         'SMS notifications are not available until an SMS provider is configured',
       );
@@ -446,6 +478,102 @@ export class NotificationsService {
         },
       }),
     ]);
+  }
+
+  capabilities() {
+    return {
+      smsAvailable: this.smsService.providerName === 'http',
+      smsProvider: this.smsService.providerName,
+      waterAlerts: true,
+    };
+  }
+
+  async waterArea(userId: string) {
+    const profile = await this.prisma.citizenProfile.findUnique({
+      where: { userId },
+      select: { kebeleId: true },
+    });
+    return { kebeleId: profile?.kebeleId ?? null };
+  }
+  async setWaterArea(userId: string, kebeleId: string | null) {
+    if (kebeleId) {
+      const area = await this.prisma.kebele.findUnique({
+        where: { id: kebeleId },
+        select: { isActive: true },
+      });
+      if (!area?.isActive)
+        throw new BadRequestException('Choose an active service area');
+    }
+    await this.prisma.citizenProfile.upsert({
+      where: { userId },
+      create: { userId, kebeleId },
+      update: { kebeleId, neighborhoodId: null },
+    });
+    return { kebeleId };
+  }
+
+  private async deliverAlertSms(
+    event: OutboxEnvelope,
+    plan: NotificationPlan,
+    userId: string,
+    now: Date,
+  ): Promise<boolean> {
+    if (this.smsService.providerName !== 'http') return false;
+    const preference = await this.prisma.notificationPreference.findUnique({
+      where: { userId_channel: { userId, channel: NotificationChannel.SMS } },
+    });
+    if (!preference?.enabled) return false;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true, status: true },
+    });
+    if (!user || user.status !== UserStatus.ACTIVE) return false;
+    const key = `${event.id}:${userId}:${NotificationChannel.SMS}`;
+    const notificationId = randomUUID();
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.idempotencyRecord.create({
+          data: {
+            id: randomUUID(),
+            scope: NOTIFICATION_IDEMPOTENCY_SCOPE,
+            key,
+            requestHash: createHash('sha256').update(key).digest('hex'),
+            expiresAt: new Date(
+              now.getTime() + IDEMPOTENCY_TTL_DAYS * 86_400_000,
+            ),
+          },
+        });
+        await tx.notification.create({
+          data: {
+            id: notificationId,
+            userId,
+            channel: NotificationChannel.SMS,
+            template: plan.template,
+            title: plan.title,
+            body: plan.body,
+            payload: this.payloadRecord(event.payload) as Prisma.InputJsonValue,
+            status: NotificationStatus.PROCESSING,
+          },
+        });
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) return false;
+      throw error;
+    }
+    try {
+      await this.smsService.send({
+        to: user.phone,
+        body: `${plan.title}. ${plan.body}`,
+      });
+    } catch (error) {
+      await this.releaseOtpSms(notificationId, key, error);
+      throw error;
+    }
+    await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: { status: NotificationStatus.SENT, sentAt: now },
+    });
+    return true;
   }
 
   private text(payload: Record<string, unknown>, key: string): string {
