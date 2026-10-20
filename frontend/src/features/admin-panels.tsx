@@ -1,9 +1,111 @@
-import { useState } from 'react';
-import { api } from '../lib/api';
-import { Resource } from './panels';
+import { useState } from "react";
+import { api } from "../lib/api";
+import { Resource } from "./panels";
+import { FormFeedback, FormLayout } from "../components/forms";
 
-export function UssdSessions() { return <Resource heading="USSD sessions" endpoint="/ussd/sessions?limit=100&page=1" columns={[["phone", "Phone"], ["state", "State"], ["updatedAt", "Updated"]]} />; }
-export function StorageAdmin() { const [key, setKey] = useState(''), [message, setMessage] = useState(''); return <section className="panel"><h1>Storage administration</h1><form onSubmit={async e => { e.preventDefault(); const result = await api<{ downloadUrl: string }>(`/storage/download/${encodeURIComponent(key)}`); window.open(result.downloadUrl, '_blank'); }}><label>Object key<input value={key} onChange={e => setKey(e.target.value)} required /></label><button className="button button-primary">Download</button></form><form onSubmit={async e => { e.preventDefault(); await api(`/storage/objects/${encodeURIComponent(key)}`, { method: 'DELETE' }); setMessage('Object deleted.'); }}><button className="button button-outline">Delete object</button></form>{message && <p className="success">{message}</p>}</section>; }
-export function ScheduleForm() { const [message, setMessage] = useState(''); return <section className="panel"><h1>Create rotation schedule</h1><form onSubmit={async e => { e.preventDefault(); const d = new FormData(e.currentTarget); await api('/schedules', { method: 'POST', body: JSON.stringify({ kebeleId: d.get('kebeleId'), name: d.get('name'), startsOn: d.get('startsOn'), endsOn: d.get('endsOn'), notes: d.get('notes') || null }) }); setMessage('Schedule created.'); }}><label>Kebele ID<input name="kebeleId" required /></label><label>Name<input name="name" required /></label><label>Starts<input name="startsOn" type="date" required /></label><label>Ends<input name="endsOn" type="date" required /></label><label>Notes<textarea name="notes" /></label>{message && <p className="success">{message}</p>}<button className="button button-primary">Create schedule</button></form></section>; }
-export function AuditLog() { return <Resource heading="Audit events" endpoint="/audit/events?limit=100&page=1" columns={[["createdAt", "Time"], ["action", "Action"], ["entityType", "Entity"], ["entityId", "Entity ID"]]} />; }
-export function OutboxMonitor() { const [message, setMessage] = useState(''); return <section className="panel"><Resource heading="Outbox events" endpoint="/outbox/events?limit=100&page=1" columns={[["createdAt", "Created"], ["eventType", "Type"], ["status", "Status"], ["attempts", "Attempts"], ["lastError", "Error"]]} /><button className="button button-primary" onClick={async () => { await api('/outbox/dispatch', { method: 'POST' }); setMessage('Dispatch run completed.'); }}>Dispatch pending events</button><button className="button button-outline" onClick={async () => { await api('/outbox/release-stuck', { method: 'POST' }); setMessage('Stuck events released.'); }}>Release stuck events</button>{message && <p className="success">{message}</p>}</section>; }
+export function UssdSessions() {
+  return (
+    <Resource
+      heading="USSD sessions"
+      endpoint="/ussd/sessions?limit=100&page=1"
+      columns={[
+        ["phone", "Phone"],
+        ["state", "State"],
+        ["updatedAt", "Updated"],
+      ]}
+    />
+  );
+}
+export function AuditLog() {
+  return (
+    <Resource
+      heading="Activity log"
+      endpoint="/audit/events?limit=100&page=1"
+      columns={[
+        ["createdAt", "Time"],
+        ["action", "Action"],
+        ["entityType", "Entity"],
+        ["entityId", "Entity ID"],
+      ]}
+    />
+  );
+}
+export function OutboxMonitor() {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [message, setMessage] = useState(""),
+    [revision, setRevision] = useState(0);
+  async function perform(action: string) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      await api(`/outbox/${action}`, { method: "POST" });
+      setMessage(
+        action === "dispatch"
+          ? "Pending events processed. The list has been refreshed."
+          : "Stale processing locks released. The list has been refreshed.",
+      );
+      setRevision((previous) => previous + 1);
+    } catch (failure) {
+      setError((failure as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <FormLayout
+      eyebrow="ADMINISTRATION / EVENT DELIVERY"
+      title="Keep updates moving"
+      description="Inspect delivery status and run a recovery action when needed."
+      help={
+        <>
+          <p>
+            <strong>Process pending events</strong> runs the normal delivery
+            process once.
+          </p>
+          <p>
+            <strong>Release stale locks</strong> makes events with expired
+            processing locks available for retry. It does not force the release
+            of an active lock.
+          </p>
+        </>
+      }
+    >
+      <Resource
+        key={revision}
+        heading="Delivery events"
+        endpoint="/outbox/events?limit=100&page=1"
+        columns={[
+          ["createdAt", "Created"],
+          ["eventType", "Type"],
+          ["status", "Status"],
+          ["attempts", "Attempts"],
+          ["lastError", "Last error"],
+        ]}
+      />
+      <section className="panel">
+        <div className="workflow-card-header">
+          <h2>Recovery actions</h2>
+        </div>
+        <FormFeedback error={error} message={message} />
+        <div className="workflow-row-actions">
+          <button
+            className="button button-primary"
+            disabled={busy}
+            onClick={() => perform("dispatch")}
+          >
+            {busy ? "Working…" : "Process pending events"}
+          </button>
+          <button
+            className="button button-outline"
+            disabled={busy}
+            onClick={() => perform("release-stuck")}
+          >
+            Release stale locks
+          </button>
+        </div>
+      </section>
+    </FormLayout>
+  );
+}
