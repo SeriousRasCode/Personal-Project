@@ -173,6 +173,9 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
       if (cancelled) return;
       const root = document.querySelector<HTMLElement>(rootSelector);
       if (!root) return;
+      root.querySelectorAll("details").forEach((details) => {
+        details.open = true;
+      });
       if (active.variant)
         root
           .querySelector<HTMLButtonElement>(
@@ -257,6 +260,9 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
           let target: HTMLElement | null = null;
           if (active.kind === "field")
             target =
+              fields[active.fieldIndex ?? 0]?.closest<HTMLElement>(
+                ".workflow-field",
+              ) ||
               fields[active.fieldIndex ?? 0]?.closest("label") ||
               fields[active.fieldIndex ?? 0];
           else if (active.kind === "page" || active.kind === "actions")
