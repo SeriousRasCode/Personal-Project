@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type Session } from "../lib/api";
+import { canAccessPage } from "../lib/permissions";
 
 type Point = { id: string; name: string; code: string };
 export function Dashboard({ session }: { session: Session | null }) {
@@ -23,7 +24,7 @@ export function Dashboard({ session }: { session: Session | null }) {
       )
       .finally(() => setLoading(false));
   }, []);
-  const operational = session && session.user.role !== "CITIZEN";
+  const operational = canAccessPage("operations", session);
   return (
     <>
       <div className="page-heading">
