@@ -121,6 +121,11 @@ export function describeField(
   field: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement,
   label: string,
 ): FieldHelp {
+  if (field.dataset.tourDescription)
+    return {
+      description: field.dataset.tourDescription,
+      example: field.dataset.tourExample || "Example only",
+    };
   if (field.autocomplete === "one-time-code")
     return helpers["verification code"];
   const known = helpers[field.name] || helpers[label.toLowerCase()];
