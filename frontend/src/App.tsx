@@ -1,16 +1,26 @@
 import { useEffect, useState } from "react";
-import { getSession, signOut, type Session } from "./lib/api";
+import {
+  getSession,
+  signOut,
+  SESSION_CHANGED,
+  api,
+  setSession as persistSession,
+  type Session,
+} from "./lib/api";
 import { canAccessPage } from "./lib/permissions";
 import { AuthPage } from "./features/auth";
 import { Reports } from "./features/reports";
 import { GeographyAdmin } from "./features/geography";
 import { Dashboard } from "./features/dashboard";
 import { navigation, roleLabels } from "./components/navigation";
-import { Notifications, Resource, WorkOrders } from "./features/panels";
+import { Notifications, Resource } from "./features/panels";
+import { WorkOrders } from "./features/work-orders";
+import { LeakTriage } from "./features/leaks";
+import "./dispatch.css";
 import { Preferences } from "./features/preferences";
 import { AuditLog, OutboxMonitor, UssdSessions } from "./features/admin-panels";
 import { Telemetry } from "./features/telemetry";
-import { Schedules } from "./features/schedules";
+import { Schedules } from "./features/rotations";
 import { UserAdministration } from "./features/users";
 import { ValveControls } from "./features/valves";
 import { StorageAdmin } from "./features/storage";
@@ -27,6 +37,26 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(getSession());
   const [route, setRoute] = useState(location.hash.slice(1) || "overview");
   const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    const update = () => {
+      const next = getSession();
+      setSession(next);
+      if (!next) location.hash = "login";
+    };
+    window.addEventListener(SESSION_CHANGED, update);
+    const current = getSession();
+    if (current)
+      void api<Session["user"]>("/auth/me")
+        .then((user) => {
+          const latest = getSession();
+          if (latest?.user.id === current.user.id)
+            persistSession({ ...latest, user });
+        })
+        .catch(() => {
+          /* The API client handles revoked sessions; network failures are shown by pages. */
+        });
+    return () => window.removeEventListener(SESSION_CHANGED, update);
+  }, []);
   useEffect(() => {
     const update = () => {
       setRoute(location.hash.slice(1) || "overview");
@@ -62,6 +92,7 @@ export default function App() {
     ),
     reports: <Reports />,
     operations: <WorkOrders />,
+    leaks: <LeakTriage />,
     telemetry: <Telemetry />,
     maintenance: <ValveControls />,
     schedules: <Schedules />,
