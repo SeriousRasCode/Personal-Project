@@ -161,6 +161,8 @@ describe('SchedulesService', () => {
       data: {
         kebeleId,
         createdById: actorId,
+        startsOn: new Date('2026-09-25T00:00:00.000Z'),
+        endsOn: new Date('2026-09-26T00:00:00.000Z'),
       },
     });
     expect(createMany.mock.calls[0]?.[0]).toMatchObject({
@@ -536,10 +538,17 @@ describe('SchedulesService', () => {
         lastChangedById: actorId,
       },
     });
-    expect(outboxCreate.mock.calls[0]?.[0].data).toMatchObject({
-      eventType: SCHEDULE_OUTBOX_EVENT_TYPES.activated,
-      payload: { reason: 'rotation started' },
-    });
+    const emitted = outboxCreate.mock.calls.map(([args]) => args.data);
+    expect(
+      emitted.find(
+        (event) => event.eventType === SCHEDULE_OUTBOX_EVENT_TYPES.activated,
+      )?.payload.reason,
+    ).toBe('rotation started');
+    expect(
+      emitted.find(
+        (event) => event.eventType === SCHEDULE_OUTBOX_EVENT_TYPES.windowOpened,
+      )?.payload.kebeleId,
+    ).toBe(kebeleId);
   });
 
   it('rejects activation outside the schedule date range', async () => {
