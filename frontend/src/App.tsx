@@ -24,6 +24,7 @@ import {
 import "./App.css";
 import { ThemeToggle } from "./components/ThemeToggle";
 import "./theme.css";
+import "./motion.css";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession());
@@ -84,6 +85,9 @@ export default function App() {
     setSession(next);
     location.hash = "#overview";
   };
+  if (route === "auth" || route === "login" || route === "signup") {
+    return <AuthPage onAuthenticated={authenticated} />;
+  }
   return (
     <div
       className={`app-shell ${menuOpen ? "menu-open" : ""}`}
@@ -200,24 +204,8 @@ export default function App() {
             )}
           </div>
         </header>
-        <main id="main" tabIndex={-1}>
-          {route === "auth" ? (
-            <div className="auth-layout">
-              <div className="auth-intro">
-                <p className="eyebrow">YOUR COMMUNITY. YOUR WATER.</p>
-                <h1>
-                  A better day
-                  <br />
-                  starts together.
-                </h1>
-                <p>
-                  Share what you see, find your local water point, and keep your
-                  community connected.
-                </p>
-              </div>
-              <AuthPage onAuthenticated={authenticated} />
-            </div>
-          ) : active ? (
+        <main id="main" tabIndex={-1} key={route} className="route-content">
+          {active ? (
             pages[route as keyof typeof pages]
           ) : (
             <section className="panel">
