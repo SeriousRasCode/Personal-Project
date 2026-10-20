@@ -27,6 +27,7 @@ import "./theme.css";
 import "./motion.css";
 import { GuidedTour } from "./components/GuidedTour";
 import "./tour.css";
+import "./tour-details.css";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession());
