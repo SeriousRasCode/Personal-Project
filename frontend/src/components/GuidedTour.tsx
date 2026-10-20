@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { navigation, roleLabels } from "./navigation";
 import { describeField, pageHelp } from "./tour-content";
 import type { Session } from "../lib/api";
+import { canAccessPage } from "../lib/permissions";
 
 type Step = {
   id: string;
@@ -64,8 +65,7 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
     const destinations = navigation.filter(
       (item) =>
         (scope === "all" || item.id === currentRoute) &&
-        (!item.authenticated || session) &&
-        (!item.roles || (session && item.roles.includes(session.user.role))),
+        canAccessPage(item.id, session),
     );
     origin.current = location.hash;
     returnFocus.current = launcher.current;
