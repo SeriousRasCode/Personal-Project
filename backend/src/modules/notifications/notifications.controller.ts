@@ -21,6 +21,7 @@ import type { AuthenticatedUser } from '../../common/types/authenticated-user.js
 import {
   ListNotificationsQueryDto,
   UpdateNotificationPreferenceDto,
+  WaterAlertAreaDto,
 } from './dto/notification.dto.js';
 import {
   NotificationListResponseDto,
@@ -45,6 +46,27 @@ export class NotificationsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.notificationsService.listForUser(user.id, query);
+  }
+
+  @Get('capabilities')
+  capabilities() {
+    return this.notificationsService.capabilities();
+  }
+
+  @Get('water-area')
+  waterArea(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.waterArea(user.id);
+  }
+
+  @Patch('water-area')
+  setWaterArea(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: WaterAlertAreaDto,
+  ) {
+    return this.notificationsService.setWaterArea(
+      user.id,
+      dto.kebeleId ?? null,
+    );
   }
 
   @Get('unread-count')
