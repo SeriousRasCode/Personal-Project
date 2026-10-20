@@ -78,6 +78,16 @@ export class WorkOrdersController {
     return this.workOrdersService.listWorkOrders(query, user);
   }
 
+  @Get('assignees')
+  @Roles(...SUPERVISORY_ROLES)
+  @ApiOperation({
+    summary:
+      'List active assignable staff without account administration access',
+  })
+  listAssignees() {
+    return this.workOrdersService.listAssignees();
+  }
+
   @Get(':workOrderId')
   @Roles(...STAFF_ROLES)
   @ApiOperation({ summary: 'Get a single work order' })
