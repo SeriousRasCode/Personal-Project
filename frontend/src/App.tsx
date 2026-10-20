@@ -25,6 +25,8 @@ import "./App.css";
 import { ThemeToggle } from "./components/ThemeToggle";
 import "./theme.css";
 import "./motion.css";
+import { GuidedTour } from "./components/GuidedTour";
+import "./tour.css";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(getSession());
@@ -128,6 +130,7 @@ export default function App() {
                   <a
                     key={item.id}
                     href={`#${item.id}`}
+                    data-tour={item.id}
                     className={`nav-link ${route === item.id ? "active" : ""}`}
                     aria-current={route === item.id ? "page" : undefined}
                   >
@@ -175,6 +178,11 @@ export default function App() {
             </strong>
           </div>
           <div className="topbar-actions">
+            <GuidedTour
+              key={session?.user.id || "guest"}
+              session={session}
+              onMenuChange={setMenuOpen}
+            />
             <ThemeToggle />
             <span className="location-label">⌖ Jimma, Ethiopia</span>
             {session ? (
