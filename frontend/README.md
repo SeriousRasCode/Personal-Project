@@ -9,17 +9,14 @@ leaks, and displays their notifications.
 1. Start the backend on `http://localhost:3000` using the steps in
    [backend/README.md](../backend/README.md). Its `CORS_ORIGINS` should include
    `http://localhost:3001`, as in the backend example environment.
-2. From this directory run `npm run dev` (Node.js 22.12 or newer). This starts
-   the API if it is not already running. PostgreSQL and Redis must be running.
+2. From this directory run `npm install` and then `npm run dev` (Node.js 22.12 or newer).
+   Start the backend separately. PostgreSQL and Redis must be running.
 3. Open `http://localhost:3001`.
 
-Use `npm run dev:frontend` if you want to start only the static frontend server.
+The frontend uses the standard Vite React TypeScript template. Vite proxies
+`/api/v1` to the backend during development.
 
-The frontend server forwards `/api/v1` requests to the backend on port 3000,
-so the app works from either `localhost:3001` or `127.0.0.1:3001` without API
-CORS configuration. The `api-base` meta tag in `index.html` can be changed for
-another deployment. The local server needs no build step or package install.
-Run `npm run check` for JavaScript syntax checks.
+Run `npm run check` for TypeScript validation and a production build.
 
 New citizens register, request a phone verification code, and enter it in the
 dialog. The backend's default `log` SMS provider writes the code to the backend
@@ -30,5 +27,6 @@ browser needs the storage bucket to allow the frontend origin and expose the
 `ETag` response header for multipart uploads. A signed-in user can attach an
 uploaded photo to a leak report.
 
-This is the citizen experience. Dispatcher and technician workflows remain in
-the backend API and are not yet exposed here.
+The React app exposes the citizen portal plus role-aware staff navigation for
+operations, telemetry, maintenance, schedules, and administration. Backend
+authorization remains authoritative for every request.
