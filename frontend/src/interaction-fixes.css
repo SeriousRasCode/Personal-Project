@@ -1,0 +1,64 @@
+/* Keep rows inside their scroll boundaries; animate interior cues instead. */
+.point-list > a:hover,
+.next-steps > a:hover,
+.nav-link:hover {
+  transform: none;
+}
+.point-list > a,
+.next-steps > a {
+  border-radius: 8px;
+  padding-inline: 8px;
+  margin-inline: -8px;
+}
+.point-list .row-arrow {
+  transition: transform 0.2s;
+}
+.point-list > a:hover .row-arrow {
+  transform: translate(2px, -2px);
+}
+.nav-list {
+  padding: 5px 10px 8px 5px;
+  margin: -5px -10px -8px -5px;
+  scroll-padding-block: 7px;
+  overflow-x: hidden;
+  min-height: 0;
+}
+.nav-link .nav-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+.table-wrap .button:hover,
+.table-wrap button:hover {
+  transform: none;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.table-wrap :focus-visible {
+  outline-offset: -3px;
+}
+.metrics {
+  padding: 5px;
+  margin-top: 18px;
+  margin-bottom: 18px;
+  margin-inline: -5px;
+  overflow: visible;
+}
+.metrics article {
+  min-width: 0;
+}
+.metrics article:hover {
+  z-index: 1;
+}
+.sidebar-bottom {
+  flex-shrink: 0;
+}
+.sidebar > .brand,
+.sidebar > .workspace-label {
+  flex-shrink: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .point-list .row-arrow {
+    transition: none;
+  }
+}
