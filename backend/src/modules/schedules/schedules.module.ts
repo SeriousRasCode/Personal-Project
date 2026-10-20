@@ -6,11 +6,12 @@ import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { PrismaModule } from '../../database/prisma.module.js';
 import { SchedulesController } from './schedules.controller.js';
 import { SchedulesService } from './schedules.service.js';
+import { ScheduleClock } from './schedule-clock.service.js';
 
 @Module({
   imports: [ConfigModule, PassportModule, PrismaModule],
   controllers: [SchedulesController],
-  providers: [SchedulesService, JwtAuthGuard, RolesGuard],
+  providers: [SchedulesService, ScheduleClock, JwtAuthGuard, RolesGuard],
   exports: [SchedulesService],
 })
 export class SchedulesModule {}
