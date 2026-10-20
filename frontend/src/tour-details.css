@@ -1,5 +1,117 @@
 /* Leave the actual target visible through the transparent modal. The shade is
    cast outside its boundary instead of dimming the target itself. */
+.tour-choice,
+.tour-dialog {
+  --guide-surface: #ffffff;
+  --guide-text: #203c30;
+  --guide-secondary: #476652;
+  --guide-border: #729780;
+  --guide-example: #edf6f0;
+  --guide-accent: #256a47;
+}
+[data-theme="dark"] .tour-choice,
+[data-theme="dark"] .tour-dialog {
+  --guide-surface: #21333f;
+  --guide-text: #f1faf5;
+  --guide-secondary: #d0e2d8;
+  --guide-border: #7ea08d;
+  --guide-example: #2b4b3c;
+  --guide-accent: #b9f2cf;
+}
+.tour-choice,
+.tour-dialog .tour-card {
+  background: var(--guide-surface);
+  color: var(--guide-text);
+  border-color: var(--guide-border);
+}
+.tour-dialog .tour-copy h2,
+.tour-choice h2 {
+  color: var(--guide-text);
+}
+.tour-dialog .tour-copy p,
+.tour-dialog .tour-count,
+.tour-dialog .tour-meta > span,
+.tour-choice .tour-meta > span,
+.tour-choice > p {
+  color: var(--guide-secondary);
+}
+.tour-dialog .tour-meta button,
+.tour-choice .tour-meta button,
+.tour-dialog .tour-skip {
+  color: var(--guide-secondary);
+}
+.tour-dialog .tour-actions .button-primary {
+  color: #102d22;
+  background: #a0e3bc;
+  border: 1px solid #86cfa5;
+}
+.tour-dialog .tour-actions .button-outline {
+  color: var(--guide-text);
+  background: var(--guide-surface);
+  border-color: var(--guide-border);
+}
+.tour-dialog .tour-actions .button:disabled {
+  opacity: 1;
+  color: #4e6759;
+  background: #d6e5dc;
+}
+.tour-choice .tour-choice-option > span,
+.tour-choice .tour-choice-option strong {
+  color: inherit;
+}
+.tour-dialog .tour-example,
+.tour-dialog .tour-field-demo {
+  background: var(--guide-example);
+  border-color: var(--guide-border);
+}
+.tour-dialog .tour-field-demo > span,
+.tour-dialog .tour-example code {
+  color: var(--guide-text);
+}
+.tour-dialog .tour-field-demo small,
+.tour-dialog .tour-example > span,
+.tour-dialog .tour-example small {
+  color: var(--guide-secondary);
+}
+.tour-dialog .tour-example > span,
+.tour-v2 .tour-meta > span {
+  font-size: 10px;
+}
+.tour-dialog .tour-field-demo small,
+.tour-dialog .tour-example small {
+  font-size: 10px;
+}
+[data-theme="dark"] .tour-dialog .tour-card,
+[data-theme="dark"] .tour-choice {
+  background: var(--guide-surface);
+  border-color: var(--guide-border);
+  color: var(--guide-text);
+}
+[data-theme="dark"] .tour-dialog .tour-copy p,
+[data-theme="dark"] .tour-dialog .tour-meta > span,
+[data-theme="dark"] .tour-dialog .tour-count,
+[data-theme="dark"] .tour-choice .tour-meta > span {
+  color: var(--guide-secondary);
+}
+[data-theme="dark"] .tour-dialog .tour-field-demo > span,
+[data-theme="dark"] .tour-dialog .tour-example code {
+  color: var(--guide-text);
+}
+[data-theme="dark"] .tour-dialog .tour-example,
+[data-theme="dark"] .tour-dialog .tour-field-demo {
+  background: var(--guide-example);
+  border-color: var(--guide-border);
+}
+[data-theme="dark"] .tour-dialog .tour-spotlight {
+  background: transparent;
+  border-color: #b5f6cf;
+  box-shadow:
+    0 0 0 9999px #020c1366,
+    0 0 0 5px #adf4cf45;
+}
+[data-theme="dark"] .tour-choice::backdrop {
+  background: #020c137d;
+}
 .tour-choice {
   width: min(450px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
