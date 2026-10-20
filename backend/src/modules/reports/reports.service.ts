@@ -123,6 +123,7 @@ export class ReportsService {
       dto.standpipeId,
       now,
     );
+    await this.consensus.recalculateNeighbors(dto.standpipeId, now);
 
     return {
       report: this.mapTapReport(report),
