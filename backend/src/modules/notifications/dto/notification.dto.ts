@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto.js';
 import {
   NotificationChannel,
@@ -27,6 +27,12 @@ export class ListNotificationsQueryDto extends PaginationQueryDto {
   @Transform(toBoolean)
   @IsBoolean()
   unreadOnly = false;
+}
+
+export class WaterAlertAreaDto {
+  @IsOptional()
+  @IsUUID('4')
+  kebeleId?: string | null;
 }
 
 export class UpdateNotificationPreferenceDto {
