@@ -1,19 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "../lib/api";
 import { Resource } from "./panels";
 import { FormFeedback, FormLayout } from "../components/forms";
 
 export function UssdSessions() {
+  const [gateway, setGateway] = useState<{
+    smsProvider: string;
+    smsConfigured: boolean;
+    ussdSignatureConfigured: boolean;
+  } | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    api<typeof gateway>("/ussd/gateway-status")
+      .then(setGateway)
+      .catch((failure) => setError(failure.message));
+  }, []);
   return (
-    <Resource
-      heading="USSD sessions"
-      endpoint="/ussd/sessions?limit=100&page=1"
-      columns={[
-        ["phone", "Phone"],
-        ["state", "State"],
-        ["updatedAt", "Updated"],
-      ]}
-    />
+    <>
+      <section className="panel">
+        <h1>Telephony gateway</h1>
+        <FormFeedback error={error} />
+        {gateway && (
+          <>
+            <p>
+              SMS provider: <strong>{gateway.smsProvider}</strong> ·{" "}
+              {gateway.smsConfigured
+                ? "HTTP delivery adapter configured"
+                : "Log only — no carrier SMS is sent"}
+            </p>
+            <p>
+              USSD callback signature:{" "}
+              {gateway.ussdSignatureConfigured
+                ? "Configured"
+                : "Not configured"}
+            </p>
+            <p>
+              Provider configuration is not proof of carrier delivery. Verify
+              the public callback URL, shortcode and handset delivery before
+              launch.
+            </p>
+          </>
+        )}
+      </section>
+      <Resource
+        heading="USSD sessions"
+        endpoint="/ussd/sessions?limit=100&page=1"
+        columns={[
+          ["phone", "Phone"],
+          ["state", "State"],
+          ["updatedAt", "Updated"],
+        ]}
+      />
+    </>
   );
 }
 export function AuditLog() {
