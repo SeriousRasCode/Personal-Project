@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, getSession } from "../lib/api";
+import { canPerform } from "../lib/permissions";
 import {
   FormActions,
   FormFeedback,
@@ -39,8 +40,7 @@ export function Schedules() {
     [message, setMessage] = useState(""),
     [starts, setStarts] = useState("");
   const [area, setArea] = useState("");
-  const role = getSession()?.user.role,
-    canManage = role === "ADMIN" || role === "DISPATCHER";
+  const canManage = canPerform("schedule.manage", getSession());
   useEffect(() => {
     api<{ items: Schedule[] }>(
       `${canManage ? "/schedules/staff" : "/schedules"}?limit=100&page=1`,
