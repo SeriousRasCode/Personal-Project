@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getSession, signOut, type Session } from "./lib/api";
+import { canAccessPage } from "./lib/permissions";
 import { AuthPage } from "./features/auth";
 import { Reports } from "./features/reports";
 import { GeographyAdmin } from "./features/geography";
@@ -44,11 +45,7 @@ export default function App() {
     return () => removeEventListener("keydown", close);
   }, [menuOpen]);
   const role = session?.user.role;
-  const links = navigation.filter(
-    (item) =>
-      (!item.authenticated || session) &&
-      (!item.roles || (role && item.roles.includes(role))),
-  );
+  const links = navigation.filter((item) => canAccessPage(item.id, session));
   const active = links.find((item) => item.id === route);
   const groups = [...new Set(links.map((item) => item.group))];
   const pages = {
