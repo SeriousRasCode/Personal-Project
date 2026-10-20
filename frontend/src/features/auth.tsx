@@ -8,6 +8,7 @@ import {
   type Session,
 } from "../lib/api";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { GuidedTour } from "../components/GuidedTour";
 
 export function AuthPage({
   onAuthenticated,
@@ -85,6 +86,7 @@ export function AuthPage({
             ← Back to community
           </a>
           <ThemeToggle />
+          <GuidedTour key={mode} session={null} accountMode={mode} />
         </div>
       </header>
       <main className="account-main">
