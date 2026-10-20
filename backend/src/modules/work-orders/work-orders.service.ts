@@ -241,6 +241,15 @@ export class WorkOrdersService {
     );
   }
 
+  async listAssignees() {
+    const items = await this.prisma.user.findMany({
+      where: { status: UserStatus.ACTIVE, role: { in: [...ASSIGNABLE_ROLES] } },
+      select: { id: true, displayName: true, role: true },
+      orderBy: { displayName: 'asc' },
+    });
+    return { items };
+  }
+
   async findWorkOrder(
     id: string,
     actor: WorkOrderActor,
