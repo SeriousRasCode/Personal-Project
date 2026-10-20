@@ -209,6 +209,38 @@ export class SchedulesService {
     private readonly configService: ConfigService,
   ) {}
 
+  async reconcileDueWindows(): Promise<void> {
+    const timezone = this.getTimezone();
+    const now = this.getNow(timezone);
+    const candidates = await this.prisma.rotationSchedule.findMany({
+      where: {
+        status: ScheduleStatus.ACTIVE,
+        windows: {
+          some: {
+            OR: [
+              {
+                status: WindowStatus.SCHEDULED,
+                startsAt: { lte: now.toJSDate() },
+              },
+              { status: WindowStatus.OPENED, endsAt: { lt: now.toJSDate() } },
+            ],
+          },
+        },
+      },
+      select: { id: true },
+    });
+    for (const candidate of candidates) {
+      await this.inTransaction(async (tx) => {
+        const current = await tx.rotationSchedule.findUnique({
+          where: { id: candidate.id },
+          include: scheduleDetailsInclude,
+        });
+        if (!current || current.status !== ScheduleStatus.ACTIVE) return;
+        await this.reconcileActivationWindows(tx, current, now, timezone);
+      });
+    }
+  }
+
   async create(
     dto: CreateRotationScheduleDto,
     actorId: string,
@@ -828,14 +860,12 @@ export class SchedulesService {
       if (from && to && to.toMillis() < from.toMillis()) {
         throw new BadRequestException('from must be on or before to');
       }
-      const startsOn: Prisma.DateTimeFilter<'RotationSchedule'> = {};
       if (from) {
-        startsOn.gte = this.dateOnlyValue(from);
+        where.endsOn = { gte: this.dateOnlyValue(from) };
       }
       if (to) {
-        startsOn.lte = this.dateOnlyValue(to);
+        where.startsOn = { lte: this.dateOnlyValue(to) };
       }
-      where.startsOn = startsOn;
     }
 
     return where;
@@ -1078,8 +1108,10 @@ export class SchedulesService {
     };
   }
 
-  private dateOnlyValue(value: DateTime): string {
-    return value.toFormat('yyyy-MM-dd');
+  private dateOnlyValue(value: DateTime): Date {
+    // Prisma requires a DateTime even for a PostgreSQL @db.Date column.
+    // UTC midnight preserves the civil date rather than shifting it by the app zone.
+    return new Date(`${value.toFormat('yyyy-MM-dd')}T00:00:00.000Z`);
   }
 
   private parseDateOnly(
@@ -1285,6 +1317,16 @@ export class SchedulesService {
         data,
       });
       this.assertUpdatedCount(result.count);
+      if (target === WindowStatus.OPENED || target === WindowStatus.CLOSED) {
+        await this.writeWindowOutboxEvent(
+          tx,
+          { ...window, rotationSchedule: schedule },
+          target,
+          changedAt,
+          'Scheduled service window transition',
+          actorId,
+        );
+      }
     }
 
     await this.updateValves(
@@ -1644,6 +1686,7 @@ export class SchedulesService {
             : SCHEDULE_OUTBOX_EVENT_TYPES.windowClosed,
         payload: {
           scheduleId: window.rotationScheduleId,
+          kebeleId: window.rotationSchedule.kebeleId,
           windowId: window.id,
           standpipeId: window.standpipeId,
           status,
