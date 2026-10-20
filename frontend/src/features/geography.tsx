@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, getSession } from "../lib/api";
+import { canPerform } from "../lib/permissions";
 import {
   FormActions,
   FormFeedback,
@@ -22,7 +23,7 @@ export function GeographyAdmin() {
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   const [remove, setRemove] = useState<Area | null>(null);
-  const admin = getSession()?.user.role === "ADMIN";
+  const admin = canPerform("area.manage", getSession());
   const load = () =>
     api<{ items: Area[] }>("/staff/geography/kebeles?limit=100&page=1")
       .then((result) => setRows(result.items))
