@@ -4,8 +4,12 @@ import { navigation, roleLabels } from "./navigation";
 import { describeField, pageHelp } from "./tour-content";
 import type { Session } from "../lib/api";
 import { canAccessPage } from "../lib/permissions";
+import { workflowGuides, type TourPreviewKind } from "../lib/tour-workflows";
+import { TourWorkflowPreview } from "./tour-workflow-preview";
 
 type Step = {
+  preview?: TourPreviewKind;
+  target?: string;
   id: string;
   kind: "welcome" | "page" | "field" | "actions" | "theme";
   title: string;
@@ -51,6 +55,7 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
   const origin = useRef("");
   const returnFocus = useRef<HTMLElement | null>(null);
   const discovered = useRef(new Set<string>());
+  const openedDetails = useRef(new Map<HTMLDetailsElement, boolean>());
   const active = index === null ? null : steps[index];
   const isOpen = index !== null;
 
@@ -70,7 +75,7 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
     origin.current = location.hash;
     returnFocus.current = launcher.current;
     discovered.current.clear();
-    const pages: Step[] = accountMode
+    const basePages: Step[] = accountMode
       ? [
           {
             id: `auth-${accountMode}`,
@@ -105,6 +110,14 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
                 },
               ],
         );
+    const pages: Step[] = basePages.flatMap((page) => [
+      page,
+      ...workflowGuides(page.route || "", session).map((extra) => ({
+        ...extra,
+        route: page.route,
+        kind: "page" as const,
+      })),
+    ]);
     setSteps([
       {
         id: "welcome",
@@ -151,6 +164,10 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
       element?.close();
       document.body.style.overflow = overflow;
       document.body.classList.remove("tour-running");
+      openedDetails.current.forEach((open, element) => {
+        if (element.isConnected) element.open = open;
+      });
+      openedDetails.current.clear();
       returnFocus.current?.focus();
     };
   }, [isOpen]);
@@ -168,12 +185,16 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
     let observer: MutationObserver | undefined;
     let resize: ResizeObserver | undefined;
     let scanTimer = 0;
-    const rootSelector = accountMode ? ".account-form-area" : "#main";
+    const rootSelector = active.preview
+      ? ".tour-workflow-preview"
+      : active.target || (accountMode ? ".account-form-area" : "#main");
     const scan = () => {
       if (cancelled) return;
       const root = document.querySelector<HTMLElement>(rootSelector);
       if (!root) return;
       root.querySelectorAll("details").forEach((details) => {
+        if (!openedDetails.current.has(details))
+          openedDetails.current.set(details, details.open);
         details.open = true;
       });
       if (active.variant)
@@ -212,6 +233,8 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
               copy: help.description,
               route: active.route,
               variant: active.variant,
+              preview: active.preview,
+              target: active.target,
               fieldIndex,
               example: help.example,
               inputType:
@@ -234,8 +257,10 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
               kind: "actions",
               route: active.route,
               variant: active.variant,
+              preview: active.preview,
+              target: active.target,
               title: "Before you take action",
-              copy: `This page offers: ${[...new Set(buttons.map((button) => button.textContent?.trim()))].slice(0, 5).join(", ")}. These are real actions. Review your values before using them; this guide will never activate them.`,
+              copy: `This form offers: ${[...new Set(buttons.map((button) => button.textContent?.trim()))].slice(0, 5).join(", ")}. ${active.preview ? "You are viewing an isolated demonstration; nothing can be saved." : "These are real actions outside the tour. Review your values first; the guide will never activate them."}`,
             });
           setSteps((previous) => {
             const position = previous.findIndex(
@@ -267,6 +292,7 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
               fields[active.fieldIndex ?? 0];
           else if (active.kind === "page" || active.kind === "actions")
             target =
+              (active.target ? root : null) ||
               root.querySelector("form") ||
               root.querySelector(".panel,.page-heading") ||
               root;
@@ -285,8 +311,11 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
             });
             if (window.innerWidth < 700)
               window.scrollBy({ top: -100, behavior: "instant" });
-          } else if (active.kind === "page")
-            window.scrollTo({ top: 0, behavior: "instant" });
+          } else if (active.kind === "page") {
+            if (active.preview || active.target)
+              target.scrollIntoView({ block: "center", behavior: "instant" });
+            else window.scrollTo({ top: 0, behavior: "instant" });
+          }
           const rect = target.getBoundingClientRect();
           const top = Math.max(accountMode ? 8 : 85, rect.top - 7);
           const bottom = Math.min(window.innerHeight - 12, rect.bottom + 7);
@@ -400,6 +429,16 @@ export function GuidedTour({ session, onMenuChange, accountMode }: Props) {
 
   return (
     <>
+      {active?.preview &&
+        document.getElementById("main") &&
+        createPortal(
+          <TourWorkflowPreview
+            key={active.preview}
+            kind={active.preview}
+            session={session}
+          />,
+          document.getElementById("main")!,
+        )}
       <button
         type="button"
         ref={launcher}
