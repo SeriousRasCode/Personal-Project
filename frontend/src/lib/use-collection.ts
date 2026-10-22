@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import type { Page } from "./dispatch";
-export function useCollection<T>(endpoint: string, pollMs = 0) {
+export function useCollection<T>(endpoint: string, pollMs = 0, enabled = true) {
   const [result, setResult] = useState<Page<T>>({ items: [] });
   const [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const serial = useRef(0);
   const reload = useCallback(async () => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     const revision = ++serial.current;
     setLoading(true);
     setError("");
@@ -18,7 +22,7 @@ export function useCollection<T>(endpoint: string, pollMs = 0) {
     } finally {
       if (revision === serial.current) setLoading(false);
     }
-  }, [endpoint]);
+  }, [endpoint, enabled]);
   useEffect(() => {
     setResult({ items: [] });
     void reload();
