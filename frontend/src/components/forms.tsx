@@ -3,11 +3,13 @@ import {
   useEffect,
   useId,
   useState,
+  useContext,
   type ReactElement,
   type ReactNode,
 } from "react";
 import { api } from "../lib/api";
 import "./forms.css";
+import { TourDemoContext, demoChoices } from "../lib/tour-demo";
 
 export function FormLayout({
   eyebrow = "WORKSPACE",
@@ -125,12 +127,18 @@ export function RecordPicker({
   initialValue?: string;
 }) {
   const [items, setItems] = useState<Choice[]>([]);
+  const demo = useContext(TourDemoContext);
   const [query, setQuery] = useState("");
   const [value, setValue] = useState(initialValue);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    if (demo) {
+      setItems(demoChoices(endpoint));
+      setLoading(false);
+      return;
+    }
     let active = true;
     setLoading(true);
     setError("");
@@ -171,7 +179,7 @@ export function RecordPicker({
     return () => {
       active = false;
     };
-  }, [endpoint, attempt]);
+  }, [endpoint, attempt, demo]);
   const filtered = items.filter(
     (item) =>
       item.id === value ||
@@ -181,18 +189,6 @@ export function RecordPicker({
   );
   return (
     <div className="record-picker">
-      {items.length > 8 && (
-        <label className="record-search">
-          Search {label.toLowerCase()}
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by name or code"
-            disabled={disabled}
-          />
-        </label>
-      )}
       <FormField
         label={label}
         optional={!required}
@@ -227,6 +223,18 @@ export function RecordPicker({
           ))}
         </select>
       </FormField>
+      {items.length > 8 && (
+        <label className="record-search">
+          Filter {label.toLowerCase()}
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search options by name or code"
+            disabled={disabled}
+          />
+        </label>
+      )}
       {!loading && !items.length && !error && (
         <p className="workflow-notice">
           No options have been added yet. Ask your administrator to add a record
