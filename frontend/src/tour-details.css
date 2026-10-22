@@ -540,3 +540,13 @@
     transition: none !important;
   }
 }
+.tour-workflow-preview {
+  margin-block: 24px;
+  border: 2px dashed #429e85;
+}
+.tour-workflow-preview .workflow-form {
+  margin-block: 12px;
+}
+[data-theme="dark"] .tour-workflow-preview {
+  border-color: #79d4b9;
+}
