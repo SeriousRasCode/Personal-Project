@@ -459,7 +459,7 @@ try {
   await evaluate(`location.hash='telemetry'`);
   await delay(1000);
   assert.ok(
-    await evaluate(`Boolean(document.querySelector('svg.dispatch-map'))`),
+    await evaluate(`Boolean(document.querySelector('.network-map-canvas'))`),
   );
   console.log(
     'Browser: monitoring map, preferences and gateway status load without API errors',
