@@ -13,7 +13,17 @@ The web dispatcher now connects the operational APIs rather than exposing only a
 - **Spatial evidence:** same-kebele standpipe reports within 500 metres contribute distance-decayed evidence at at most half the direct-observation weight. Reliability, recency and priors remain part of the consensus calculation. A new report recalculates nearby standpipe snapshots.
 - **Session lifecycle:** ordinary API requests refresh an expired token once, sharing one refresh across concurrent failures. A revoked session clears the UI account state. A real 403 does not log the user out. Startup validates the saved account against `/auth/me`.
 
-## Verification
+## Interface refinements
+
+Shared form grids align labels, controls and help text across columns; record searches sit below their selectors. Tours cover the latest repair, triage, rotation and monitoring workflows with role-filtered, isolated demonstration forms that cannot save data.
+
+The monitoring map uses Leaflet with geographic street tiles, selectable observations, pressure history, name/freshness filters, fit and expanded views, and external location links. Gray observations are stale or unavailable. It is not an interpolated hydraulic model. The default OpenStreetMap street tiles require an internet connection; configure `VITE_MAP_TILE_URL` and `VITE_MAP_ATTRIBUTION` at build time for another provider. Retain attribution and comply with the chosen provider's usage policy. Tile failures leave the observation list and coordinates available.
+
+A water-style page rail supports dragging, track clicks, arrow keys, Page Up/Down and Home/End. Nested panels retain thin native scrollbars. Reduced-motion preferences disable decorative animation, and forced-colors mode restores the native page scrollbar.
+
+## Regression checks
+
+With the local frontend on port 3001 and Chromium debugging on `127.0.0.1:9335`, run `npm --prefix frontend run test:ui` for read-only fixture-based browser coverage of alignment, marker selection, map search/zoom, scroll keyboard controls, current-page workflow tours and mobile overflow. This opens and closes its own browser tab, blocks API writes and uses no real credentials. It complements, rather than replaces, the live backend workflow checks below.
 
 Run `npm --prefix frontend test`, `npm --prefix frontend run check`, and the backend test, lint and build scripts. Regression coverage includes role visibility, order/window action eligibility, stale map data, concurrent token refresh, spatial weighting, raw-body USSD signatures, targeted water alerts and schedule-clock overlap protection.
 
