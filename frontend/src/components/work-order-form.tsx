@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { TourDemoContext, demoChoices } from "../lib/tour-demo";
 import { api } from "../lib/api";
 import type { WorkOrder } from "../lib/dispatch";
 import { localDateTime } from "../lib/dispatch";
@@ -11,8 +12,11 @@ export function AssigneeField({
   value?: string;
   disabled?: boolean;
 }) {
+  const demo = useContext(TourDemoContext);
   const data = useCollection<{ id: string; displayName: string; role: string }>(
     "/work-orders/assignees",
+    0,
+    !demo,
   );
   return (
     <FormField
@@ -28,10 +32,12 @@ export function AssigneeField({
         disabled={disabled || data.loading}
       >
         <option value="">Unassigned</option>
-        {data.items.map((person) => (
+        {(demo ? demoChoices("/assignees") : data.items).map((person) => (
           <option key={person.id} value={person.id}>
             {person.displayName} ·{" "}
-            {person.role.toLowerCase().replaceAll("_", " ")}
+            {(person.role || "FIELD_TECHNICIAN")
+              .toLowerCase()
+              .replaceAll("_", " ")}
           </option>
         ))}
       </select>
@@ -51,6 +57,7 @@ export function WorkOrderForm({
   onSaved: (order: WorkOrder) => void;
   onCancel: () => void;
 }) {
+  const demo = useContext(TourDemoContext);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   return (
@@ -58,6 +65,7 @@ export function WorkOrderForm({
       className="workflow-form"
       onSubmit={async (event) => {
         event.preventDefault();
+        if (demo) return;
         const data = new FormData(event.currentTarget);
         if (!data.has("assignedToId")) {
           setError("Wait for the staff directory to load before saving.");
