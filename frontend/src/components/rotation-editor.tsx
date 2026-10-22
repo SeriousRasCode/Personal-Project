@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { TourDemoContext } from "../lib/tour-demo";
 import { api } from "../lib/api";
 import { localDateTime } from "../lib/dispatch";
 import type { Rotation, RotationWindow } from "../lib/rotations";
@@ -12,6 +13,7 @@ export function RotationEditor({
   onSaved: (record: Rotation) => void;
   onCancel: () => void;
 }) {
+  const demo = useContext(TourDemoContext);
   const [area, setArea] = useState(rotation?.kebeleId || ""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -36,6 +38,7 @@ export function RotationEditor({
       className="workflow-form"
       onSubmit={async (event) => {
         event.preventDefault();
+        if (demo) return;
         const data = new FormData(event.currentTarget);
         setError("");
         if (!area || !windows.length) {
