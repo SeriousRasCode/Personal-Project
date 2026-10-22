@@ -70,8 +70,12 @@
   display: grid;
   gap: 7px;
   min-width: 0;
+  align-content: start;
+  grid-template-rows: auto auto auto;
 }
 .workflow-field > label {
+  min-height: 20px;
+  line-height: 20px;
   font-size: 12px;
   font-weight: 650;
   color: #395641;
@@ -107,6 +111,36 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
+  align-items: start;
+}
+@supports (grid-template-rows: subgrid) {
+  .workflow-columns > .workflow-field {
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+  }
+}
+.workflow-form {
+  row-gap: 20px;
+}
+.workflow-form > .workflow-section {
+  margin-bottom: 0;
+}
+.record-picker {
+  align-content: start;
+}
+.record-picker .workflow-field {
+  align-content: start;
+}
+.dispatch-page .dispatch-toolbar {
+  align-items: flex-start;
+}
+.dispatch-toolbar > .record-picker {
+  flex: 1;
+  min-width: min(220px, 100%);
+}
+.dispatch-toolbar:has(> .workflow-field, > .record-picker) > .button {
+  margin-top: 27px;
+  min-height: 46px;
 }
 .workflow-help {
   padding: 22px 0;
@@ -423,6 +457,13 @@
   .workflow-columns {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+  .workflow-columns > .workflow-field {
+    grid-row: auto;
+    grid-template-rows: auto auto auto;
+  }
+  .dispatch-toolbar:has(> .workflow-field, > .record-picker) > .button {
+    margin-top: 0;
   }
   .workflow-page .page-heading h1 {
     font-size: 25px;
