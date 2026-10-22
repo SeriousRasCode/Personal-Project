@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { TourDemoContext } from "../lib/tour-demo";
 import { api } from "../lib/api";
 import { FormField, FormFeedback, RecordPicker } from "./forms";
 export function MonitoringPointForm({ onCreated }: { onCreated: () => void }) {
+  const demo = useContext(TourDemoContext);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
@@ -16,6 +18,7 @@ export function MonitoringPointForm({ onCreated }: { onCreated: () => void }) {
         className="workflow-form"
         onSubmit={async (event) => {
           event.preventDefault();
+          if (demo) return;
           const form = event.currentTarget,
             data = new FormData(form);
           if (!data.get("standpipeId")) {
