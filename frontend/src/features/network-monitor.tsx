@@ -4,7 +4,7 @@ import { useCollection } from "../lib/use-collection";
 import { isStale, pressureColor, type MapPoint } from "../lib/monitoring";
 import { human, when } from "../lib/dispatch";
 import { FormField, FormFeedback, RecordPicker } from "../components/forms";
-import { NetworkMap } from "../components/network-map";
+import { NetworkMap } from "../components/geographic-map";
 type PressurePoint = {
   id: string;
   name: string;
@@ -36,6 +36,8 @@ type Reading = {
 };
 export function NetworkMonitor() {
   const [area, setArea] = useState(""),
+    [search, setSearch] = useState(""),
+    [freshOnly, setFreshOnly] = useState(false),
     [mode, setMode] = useState<"pressure" | "flow">("pressure"),
     [selected, setSelected] = useState(""),
     [history, setHistory] = useState<Reading[]>([]),
@@ -139,6 +141,13 @@ export function NetworkMonitor() {
     selectedPressure = pressure.items.find((point) => point.id === selected);
   const samples = [...history].reverse(),
     max = Math.max(1, ...samples.map((reading) => reading.pressureBar));
+  const filtered = points.filter(
+    (point) =>
+      (!freshOnly || !point.stale) &&
+      `${point.name} ${point.label}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+  );
   return (
     <section className="panel dispatch-page">
       <h2>Live network observations</h2>
@@ -175,11 +184,48 @@ export function NetworkMonitor() {
         {updated || "waiting"}. Flow consensus does not measure pressure in bar.
       </p>
       <FormFeedback error={pressure.error || (area ? flow.error : "")} />
+      <div className="dispatch-toolbar">
+        <FormField label="Find an observation">
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Name, flow condition or pressure"
+          />
+        </FormField>
+        <FormField label="Observation freshness">
+          <select
+            value={freshOnly ? "fresh" : "all"}
+            onChange={(event) => setFreshOnly(event.target.value === "fresh")}
+          >
+            <option value="all">All observations, including stale</option>
+            <option value="fresh">Recent observations only</option>
+          </select>
+        </FormField>
+      </div>
       {mode === "flow" && !area ? (
         <p>Choose a service area to load flow and queue consensus.</p>
       ) : (
         <>
-          <NetworkMap points={points} onSelect={setSelected} />
+          <NetworkMap
+            points={filtered}
+            selectedId={selected}
+            onSelect={setSelected}
+            onInspect={(id) => {
+              setSelected(id);
+              requestAnimationFrame(() => {
+                document
+                  .getElementById("network-observation-detail")
+                  ?.scrollIntoView({
+                    block: "start",
+                    behavior: matchMedia("(prefers-reduced-motion: reduce)")
+                      .matches
+                      ? "instant"
+                      : "smooth",
+                  });
+              });
+            }}
+          />
           <div className="dispatch-toolbar">
             <span>
               ● Green: {mode === "pressure" ? "1.5–5 bar" : "full flow"}
@@ -187,8 +233,12 @@ export function NetworkMonitor() {
             <span>● Amber: {mode === "pressure" ? ">5 bar" : "trickle"}</span>
             <span>● Red: {mode === "pressure" ? "<1.5 bar" : "dry"}</span>
           </div>
-          <div className="dispatch-list">
-            {points.map((point) => (
+          <p>
+            {filtered.length} of {points.length} observations shown. Gray
+            markers represent stale or unavailable observations.
+          </p>
+          <div className="network-results" data-tour-target="map-results">
+            {filtered.map((point) => (
               <button
                 key={point.id}
                 className={`dispatch-record ${point.id === selected ? "is-selected" : ""}`}
@@ -205,7 +255,7 @@ export function NetworkMonitor() {
         </>
       )}
       {selectedPressure && mode === "pressure" && (
-        <article>
+        <article id="network-observation-detail">
           <h3>{selectedPressure.name} · Pressure history</h3>
           <p>
             Latest observation: {when(selectedPressure.observedAt)} ·{" "}
@@ -270,7 +320,7 @@ export function NetworkMonitor() {
         </article>
       )}
       {mode === "flow" && selectedFlow && (
-        <article>
+        <article id="network-observation-detail">
           <h3>{selectedFlow.name}</h3>
           <p>
             {human(selectedFlow.tapStatus)} · {selectedFlow.tapSampleCount}{" "}
