@@ -128,7 +128,92 @@ export function describeField(
     };
   if (field.autocomplete === "one-time-code")
     return helpers["verification code"];
-  const known = helpers[field.name] || helpers[label.toLowerCase()];
+  const additions: Record<string, FieldHelp> = {
+    title: {
+      description:
+        "Use a clear repair title so the field team can recognize the task in the work queue.",
+      example: "Repair leak beside the market",
+    },
+    assignedToId: {
+      description:
+        "Assign this repair to an active technician, operator or dispatcher. Leaving it unassigned keeps it in the open queue.",
+      example: "Example field technician",
+    },
+    priority: {
+      description:
+        "Choose urgency based on water loss, disruption and safety. Priority helps dispatchers order the repair queue.",
+      example: "HIGH",
+    },
+    scheduledFor: {
+      description:
+        "Choose the planned field visit time in your device time zone. This does not change the water rotation window.",
+      example: "2026-10-23 09:00",
+    },
+    "progress / resolution note": {
+      description:
+        "Record what was done and how the repair was checked. A resolution note is required before marking work completed.",
+      example: "Replaced the damaged joint and verified normal water flow.",
+    },
+    "decision note": {
+      description:
+        "Explain the evidence behind your triage decision so the next person understands why this incident was accepted or rejected.",
+      example: "Three nearby reports confirm a visible pipe burst.",
+    },
+    "find an observation": {
+      description:
+        "Search the names and condition labels. Results and map markers are filtered together; clear the search to restore them.",
+      example: "Ginjo",
+    },
+    "observation freshness": {
+      description:
+        "Choose recent observations to exclude stale or unavailable readings. Gray markers never imply healthy pressure.",
+      example: "Recent observations only",
+    },
+    "observation layer": {
+      description:
+        "Measured pressure uses bar. Crowd consensus estimates full flow, trickle or dry and cannot be interpreted as measured pressure.",
+      example: "Crowdsourced flow consensus",
+    },
+    alertArea: {
+      description:
+        "Choose your kebele for water-opening and closing alerts and your USSD area. The live Save action updates this setting; this guide does not.",
+      example: "Example service area",
+    },
+  };
+  const suffix = field.name.split("-").at(-1);
+  const windowHelp: Record<string, FieldHelp> = {
+    start: {
+      description:
+        "Set when this service window opens. A midnight window can close on the following day; keep it inside the rotation date range.",
+      example: "2026-10-23 00:00",
+    },
+    end: {
+      description:
+        "Set a closing time after the opening time. Overlapping windows are checked when the draft is saved.",
+      example: "2026-10-23 03:00",
+    },
+    min: {
+      description:
+        "Optional lower pressure target in bar for this service window. This is a planning target, not a measured reading.",
+      example: "1.5",
+    },
+    max: {
+      description:
+        "Optional upper pressure target in bar. It must not be below the minimum pressure target.",
+      example: "3.0",
+    },
+    point: {
+      description:
+        "Choose a specific standpipe or leave blank for service across the whole kebele.",
+      example: "Example market water point",
+    },
+  };
+  const known =
+    additions[label.toLowerCase()] ||
+    additions[field.name] ||
+    (suffix ? windowHelp[suffix] : undefined) ||
+    helpers[label.toLowerCase()] ||
+    helpers[field.name];
   if (known)
     return field instanceof HTMLSelectElement
       ? {
