@@ -1,0 +1,109 @@
+.network-map {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.network-map-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+.network-map-tools small {
+  display: block;
+  margin-top: 5px;
+  color: #667e76;
+}
+.network-map-tools > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.network-map-canvas {
+  height: 420px;
+  width: 100%;
+  isolation: isolate;
+  z-index: 0;
+  background: #dce9e4;
+}
+.network-map.is-expanded .network-map-canvas {
+  height: min(70vh, 700px);
+}
+.network-map .leaflet-container {
+  font: inherit;
+}
+.network-map .leaflet-control-zoom a {
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
+}
+.network-map .leaflet-control-attribution a {
+  min-height: 0;
+  display: inline;
+}
+.network-map .leaflet-popup-content {
+  min-width: 190px;
+  max-width: 260px;
+  line-height: 1.6;
+}
+.network-map .leaflet-popup-content .button {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.network-map .leaflet-popup-content p {
+  margin: 8px 0;
+}
+.network-map-caption,
+.network-map-warning,
+.network-map-empty {
+  padding: 12px 16px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.network-map-warning {
+  background: #fff0cf;
+  color: #694908;
+}
+.network-map-empty {
+  border-top: 1px solid var(--line);
+}
+.network-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+  padding: 4px;
+}
+[data-theme="dark"] .network-map-tools small {
+  color: #bdd3cb;
+}
+[data-theme="dark"] .network-map .leaflet-popup-content-wrapper,
+[data-theme="dark"] .network-map .leaflet-popup-tip {
+  background: #182f34;
+  color: #e6f5ef;
+}
+[data-theme="dark"] .network-map .leaflet-popup-content a:not(.button) {
+  color: #8be0c5;
+}
+[data-theme="dark"] .network-map .leaflet-control-attribution {
+  background: #152c32ed;
+  color: #d5e9e0;
+}
+[data-theme="dark"] .network-map .leaflet-control-attribution a {
+  color: #a8e5d1;
+}
+@media (max-width: 680px) {
+  .network-map-canvas {
+    height: 350px;
+  }
+  .network-map-tools .button {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+}
